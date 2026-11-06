@@ -421,7 +421,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--lantern);outline-of
 
   function play(e){
     var h = heard(); if (h.indexOf(e) === -1) { h.push(e); store('ms_heard', h); }
-    toast(e + '편 「' + titles[e - 1] + '」' + (e === 1 ? '' : ' — 테스트 리더는 1편만 있어요')); if (e === 1) { setTimeout(function(){ location.href = '/reader/'; }, 700); return; }
+    toast(e + '편 「' + titles[e - 1] + '」' + (e === 1 ? '' : ' — 테스트 리더는 1편만 있어요')); if (e === 1) { setTimeout(function(){ location.href = '/reader/#play'; }, 700); return; }
     if (openHouse) { closeWin(); setTimeout(buildMap, 950); } else buildMap();
   }
   document.getElementById('playTonight').addEventListener('click', function(){ play(TONIGHT); });
