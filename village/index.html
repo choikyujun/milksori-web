@@ -482,7 +482,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--lantern);outline-of
     document.getElementById('kNight').textContent = lines[nIdx][0];
     document.getElementById('kSay').textContent = lines[nIdx][mode === 'pc' ? 2 : 1];
     placeBubble(); bubble.classList.add('show');
-    clearTimeout(bubbleTimer); bubbleTimer = setTimeout(hideBubble, 7000);
+    clearTimeout(bubbleTimer); bubbleTimer = setTimeout(hideBubble, 10000); /* PRD: 누르거나 10초 */
   }
   function hideBubble(){
     clearTimeout(bubbleTimer); if (!bubble.classList.contains('show')) return;
