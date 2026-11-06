@@ -226,6 +226,15 @@ button:focus-visible{outline:2px solid var(--lantern);outline-offset:3px}
     {img:'tail.jpg', temp:true, refrain:true, b:[['자장자장 우리 호이, 달도 자고 별도 자.','Hush now, hush now, little Hoi, moon’s asleep and stars are too.']]},
     {img:'tail.jpg', z:1.15, ox:'40%', oy:'60%', temp:true, ritual:'off', b:[['호이는 큰 호랑이의 꼬리를 꼭 끌어안고 잠들었어.','Hoi hugged the big tiger’s tail tight, and fell asleep.'],['잘 자, 내일 밤 또 만나.','Good night. See you tomorrow night.']]}
   ];
+  /* 아이 이름 호명(PRD §6-9): p12 맺음 "잘 자, ○○아" · 후렴은 설정에서 켠 경우만 "우리 ○○" */
+  (function(){
+    var n = '', inRefrain = false;
+    try { n = localStorage.getItem('ms_child') || ''; inRefrain = localStorage.getItem('ms_child_refrain') === '1'; } catch (e) {}
+    if (!n) return;
+    var c = n.charCodeAt(n.length - 1), called = (c >= 0xAC00 && c <= 0xD7A3) ? n + ((c - 0xAC00) % 28 ? '아' : '야') : n;
+    PAGES[11].b[1] = ['잘 자, ' + called + '. 내일 밤 또 만나.', 'Good night, ' + n + '. See you tomorrow night.'];
+    if (inRefrain) PAGES[10].b[0] = ['자장자장 우리 ' + n + ', 달도 자고 별도 자.', 'Hush now, hush now, little ' + n + ', moon\u2019s asleep and stars are too.'];
+  })();
   var $ = function(id){ return document.getElementById(id); };
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var pics = $('pics'), txt = $('txt'), sub = $('sub'), band = $('band'), chrome = $('chrome'), ticks = $('ticks');

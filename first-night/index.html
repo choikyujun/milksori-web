@@ -123,6 +123,17 @@ h1{margin:0;font-family:var(--f-story);font-weight:400;font-size:28px;line-heigh
 .kkline b{display:block;color:var(--ink);font-weight:400}
 .kkline button{margin-top:4px;padding:8px 0;border:0;background:transparent;color:var(--lantern);font-size:14px;text-decoration:underline;text-underline-offset:3px}
 
+/* 아이 이름 */
+.nm-pic{height:150px;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px))) 16px;background:url(media/tiger-hoi.jpg) 44% 52%/cover;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 22%,#000 70%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 22%,#000 70%,transparent 100%)}
+.nm-field{display:flex;flex-direction:column;gap:6px;margin-top:20px;font-size:13px;color:var(--faint)}
+.nm-field input{height:54px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:rgba(29,26,43,.9);color:var(--ink);font-family:var(--f-story);font-size:20px}
+.nm-field input:focus{outline:2px solid var(--lantern);outline-offset:2px;border-color:transparent}
+.nm-hint{margin:6px 0 0;font-size:12.5px;color:var(--faint)}
+.nm-slip{margin-top:18px}
+.nm-slip .say{font-size:20px}
+.nm-privacy{text-align:left;margin-top:12px}
+@media (min-width:900px){.nm-pic{margin:-28px -32px 16px;border-radius:24px 24px 0 0}}
+
 /* 1편 준비 */
 .prep{text-align:center}
 .prep .stage{position:relative;margin-top:10px;margin-bottom:16px}
@@ -165,7 +176,7 @@ h1{margin:0;font-family:var(--f-story);font-weight:400;font-size:28px;line-heigh
   <header class="bar">
     <button class="back" id="back" type="button" aria-label="이전 단계로" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
     <span class="mark" id="mark">MilkSori</span>
-    <div class="steps" id="steps" aria-label="진행 단계" hidden><i></i><i></i><i></i></div>
+    <div class="steps" id="steps" aria-label="진행 단계" hidden><i></i><i></i><i></i><i></i></div>
     <button class="lang" id="lang" type="button" aria-label="언어 바꾸기">한국어</button>
   </header>
 
@@ -234,8 +245,27 @@ h1{margin:0;font-family:var(--f-story);font-weight:400;font-size:28px;line-heigh
     <button class="primary" type="button" id="toPrep" hidden>첫 이야기 만들기</button>
   </section>
 
-  <!-- 3 1편 준비 -->
-  <section class="screen prep" id="s3" aria-labelledby="h3" hidden>
+  <!-- 3 아이 이름 (선택) -->
+  <section class="screen named" id="s3" aria-labelledby="h3" hidden>
+    <div class="nm-pic" role="img" aria-label="큰 호랑이가 호이를 내려다보는 그림"></div>
+    <h1 id="h3">큰 호랑이가<br>누구를 재워 줄까요?</h1>
+    <p class="lede">아이 이름이나 애칭을 알려 주세요. 이야기 마지막에 내 목소리로 이름을 불러 줘요.</p>
+    <label class="nm-field" for="childName"><span>아이 이름</span>
+      <input id="childName" type="text" inputmode="text" autocomplete="off" maxlength="10" placeholder="예: 지우, 콩이" aria-describedby="nmHint">
+    </label>
+    <p class="nm-hint" id="nmHint">10자까지 · 한글, 영어 모두 돼요</p>
+    <div class="slip nm-slip" aria-live="polite">
+      <p class="say" id="nmSay">잘 자, 내일 밤 또 만나.</p>
+      <p class="how" id="nmHow">이야기 마지막 쪽에서 이렇게 들려줘요</p>
+    </div>
+    <p class="note nm-privacy">이름은 우리 가족에게만 저장되고, 다른 곳에는 보이지 않아요.</p>
+    <div class="grow" style="min-height:16px"></div>
+    <button class="primary" type="button" id="toPrep2">다음</button>
+    <button class="quiet" type="button" id="skipName">나중에 할게요</button>
+  </section>
+
+  <!-- 4 1편 준비 -->
+  <section class="screen prep" id="s4" aria-labelledby="h4" hidden>
     <div class="grow"></div>
     <div class="stage" aria-hidden="true">
 <div class="house" id="prepHouse" aria-hidden="true"><span class="base"></span>
@@ -244,7 +274,7 @@ h1{margin:0;font-family:var(--f-story);font-weight:400;font-size:28px;line-heigh
     </div>
       <div class="kk"><img src="media/magpie.png" alt=""></div>
     </div>
-    <h1 id="h3">까치가 첫 이야기를<br>가져오고 있어요</h1>
+    <h1 id="h4">까치가 첫 이야기를<br>가져오고 있어요</h1>
     <p class="lede">1편 「밤마을에 온 걸 환영해」를 내 목소리로 만들고 있어요</p>
     <div class="pages" id="pages" aria-hidden="true"></div>
     <p class="status" id="pstatus" aria-live="polite">그림책 12쪽 중 0쪽 준비</p>
@@ -261,23 +291,24 @@ h1{margin:0;font-family:var(--f-story);font-weight:400;font-size:28px;line-heigh
   <button type="button" id="rvStart">처음부터</button>
   <button type="button" id="rvDeny">마이크 거부 화면</button>
   <button type="button" id="rvFill">녹음 다 채우기</button>
+  <button type="button" id="rvName">이름 화면</button>
 </div>
 <p class="toast" id="toast" role="status"></p>
 
 <script>
 (function(){
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var screens = [0,1,2,3].map(function(i){ return document.getElementById('s' + i); });
+  var screens = [0,1,2,3,4].map(function(i){ return document.getElementById('s' + i); });
   var back = document.getElementById('back'), steps = document.getElementById('steps'), mark = document.getElementById('mark');
   var cur = 0;
   function go(n){
     screens[cur].hidden = true; cur = n;
     var s = screens[n]; s.hidden = false; s.classList.remove('enter'); void s.offsetWidth; s.classList.add('enter');
-    back.hidden = n === 0 || n === 3; steps.hidden = n === 0; mark.hidden = n !== 0;
+    back.hidden = n === 0 || n === 4; steps.hidden = n === 0; mark.hidden = n !== 0;
     [].forEach.call(steps.children, function(d, i){ d.className = i + 1 < n ? 'done' : (i + 1 === n ? 'on' : ''); });
     window.scrollTo(0, 0);
     var h = s.querySelector('h1'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
-    if (n === 3) startPrep();
+    if (n === 4) startPrep();
   }
   [].forEach.call(document.querySelectorAll('[data-go]'), function(b){ b.addEventListener('click', function(){ go(+b.dataset.go); }); });
   back.addEventListener('click', function(){ if (cur === 2) stopRec(true); go(cur - 1); });
@@ -356,6 +387,24 @@ h1{margin:0;font-family:var(--f-story);font-weight:400;font-size:28px;line-heigh
   }
   document.getElementById('retryMic').addEventListener('click', function(){ micErr.hidden = true; startRec(); });
   toPrep.addEventListener('click', function(){ go(3); });
+
+  /* 아이 이름(선택): 받침 있으면 "아", 없으면 "야". 한글이 아니면 조사 없이 */
+  var nameIn = document.getElementById('childName'), nmSay = document.getElementById('nmSay');
+  function josa(n){
+    var c = n.charCodeAt(n.length - 1);
+    if (c < 0xAC00 || c > 0xD7A3) return n;
+    return n + ((c - 0xAC00) % 28 ? '아' : '야');
+  }
+  function cleanName(v){ return v.replace(/[^\p{L}\s]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 10); }
+  nameIn.addEventListener('input', function(){
+    var n = cleanName(nameIn.value);
+    nmSay.textContent = n ? '잘 자, ' + josa(n) + '. 내일 밤 또 만나.' : '잘 자, 내일 밤 또 만나.';
+  });
+  function saveName(n){ try { if (n) localStorage.setItem('ms_child', n); else localStorage.removeItem('ms_child'); } catch (e) {} }
+  document.getElementById('toPrep2').addEventListener('click', function(){ saveName(cleanName(nameIn.value)); go(4); });
+  document.getElementById('skipName').addEventListener('click', function(){ saveName(''); go(4); });
+  nameIn.addEventListener('keydown', function(e){ if (e.key === 'Enter') document.getElementById('toPrep2').click(); });
+  document.getElementById('rvName').addEventListener('click', function(){ clearInterval(prepT); agree.checked = true; askedMic = true; go(3); nameIn.focus(); });
 
   /* 1편 준비: 12쪽이 차례로 준비되고, 1쪽이 준비되면 바로 들을 수 있다 */
   var pages = document.getElementById('pages'), pstatus = document.getElementById('pstatus'), ready = document.getElementById('ready'), prepT = null;
