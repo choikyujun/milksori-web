@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#12101C">
+<title>MilkSori 부모님 화면</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Gowun+Dodum&display=swap">
+<style>
+/* layout: 부모가 보는 화면 묶음. 위 검토 탭 4개(#plans 구독 · #sleeping 잠든 등불 "부모님께" · #list 목록으로 보기 · #states 빈 상태·오류).
+   모바일 = 한 열(폭 480) / PC = 가운데 한 열(목록·빈 상태는 폭 960, 2열). 결제는 차분하게: 자동 체크·카운트다운·흐린 해지 버튼 없음. */
+:root{
+  --bg:#12101C; --surface:#1D1A2B; --surface-2:#262238; --ink:#F2EFFA; --sub:#C9C2DD; --faint:#9E97B8; --line:#332D48;
+  --accent:#7166AE; --accent-hi:#8479C2; --lantern:#F2D9A0; --hanji:#F3E8D2; --hanji-ink:#2A2236; --hanji-sub:#6B6178; --wood:#5A4636; --danger:#F0A8A0;
+  --f-story:"Gowun Batang","Nanum Myeongjo","AppleMyungjo",serif;
+  --f-ui:"Gowun Dodum",-apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;padding-block:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible,a:focus-visible{outline:2px solid var(--lantern);outline-offset:3px}
+h1,h2,h3{font-weight:400;margin:0}
+
+.rv{position:sticky;top:0;z-index:6;display:flex;gap:4px;overflow-x:auto;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-left,0px)) 10px;background:rgba(12,10,20,.96);border-bottom:1px solid var(--line);scrollbar-width:none}
+.rv a{flex-shrink:0;height:34px;padding:0 14px;border-radius:999px;display:flex;align-items:center;font-size:13px;color:var(--faint);text-decoration:none;border:1px solid transparent}
+.rv a[aria-current="page"]{color:var(--ink);border-color:var(--line);background:var(--surface)}
+.rv .lab{flex-shrink:0;align-self:center;margin-right:6px;font-size:11px;color:var(--faint);letter-spacing:.06em}
+.view{max-width:480px;margin:0 auto;padding-block:16px 64px}
+.view.wide{max-width:960px}
+.bar{display:flex;align-items:center;gap:8px;height:52px}
+.back{width:44px;height:44px;margin-left:-12px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--sub)}
+.back svg{width:20px;height:20px}
+.bar h1{font-family:var(--f-story);font-size:20px}
+.note{margin:0;font-size:12.5px;color:var(--faint);word-break:keep-all}
+.primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:54px;border-radius:14px;background:var(--accent);color:#fff;font-size:16px}
+.primary:hover{background:var(--accent-hi)}
+.ghost{display:flex;align-items:center;justify-content:center;width:100%;height:50px;border-radius:14px;border:1px solid var(--line);color:var(--sub);font-size:15px}
+.quiet{display:block;margin:10px auto 0;padding:8px;color:var(--faint);font-size:14px}
+.toast{position:fixed;z-index:20;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);padding:10px 16px;border-radius:999px;background:rgba(18,16,28,.96);border:1px solid var(--line);font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center}
+.toast.on{opacity:1}
+
+/* ── 구독 ── */
+.hero{position:relative;height:200px;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));background:url(media/tiger-hoi.jpg) 46% 34%/cover}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,16,28,.35),rgba(18,16,28,0) 30%,rgba(18,16,28,0) 55%,var(--bg))}
+.plans-h{margin-top:-28px;position:relative}
+.plans-h h2{font-family:var(--f-story);font-size:26px;line-height:1.4;text-wrap:balance}
+.plans-h p{margin:8px 0 0;color:var(--sub);font-size:14.5px;word-break:keep-all}
+.cmp{margin-top:20px;border-radius:14px;border:1px solid var(--line);overflow:hidden;font-size:14px}
+.cmp .row{display:grid;grid-template-columns:1fr 64px 64px;align-items:center;min-height:46px;padding:0 14px;border-top:1px solid var(--line)}
+.cmp .row:first-child{border-top:0;background:var(--surface);min-height:40px;font-size:12.5px;color:var(--faint)}
+.cmp .row span:not(:first-child){text-align:center}
+.cmp .y{color:var(--lantern)}
+.cmp .n{color:var(--faint)}
+.cmp .row b{font-weight:400}
+.pick{display:flex;flex-direction:column;gap:8px;margin-top:20px}
+.plan{position:relative;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;border-radius:14px;border:1px solid var(--line);text-align:left}
+.plan[aria-checked="true"]{border-color:var(--lantern);background:rgba(242,217,160,.07)}
+.plan b{display:block;font-weight:400;font-size:16px}
+.plan small{font-size:12.5px;color:var(--faint)}
+.plan .pr{text-align:right;font-variant-numeric:tabular-nums}
+.plan .pr b{font-size:17px}
+.plan .badge{position:absolute;top:-9px;left:14px;padding:0 8px;border-radius:999px;background:var(--lantern);color:var(--hanji-ink);font-size:11px;line-height:18px}
+.pay{margin-top:20px}
+.terms{margin:14px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--faint)}
+.terms a{color:var(--sub)}
+/* 구독 중 */
+.mine{margin-top:20px;border-radius:14px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+.mine .row{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:54px;padding:0 16px;border-top:1px solid var(--line);font-size:14.5px}
+.mine .row:first-child{border-top:0}
+.mine .row span:last-child{color:var(--sub);text-align:right}
+.mine button.row{width:100%;text-align:left}
+.stop{margin-top:20px;padding:18px;border-radius:14px;border:1px solid #5A3A44;background:rgba(240,168,160,.05)}
+.stop h3{font-family:var(--f-story);font-size:20px}
+.stop ul{margin:10px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--sub)}
+.stop li{display:flex;gap:8px}
+.stop li::before{content:"";flex-shrink:0;width:6px;height:6px;margin-top:8px;border-radius:50%;background:var(--faint)}
+.stop .row2{display:flex;gap:8px;margin-top:16px}
+.stop .row2 button{flex:1;height:48px;border-radius:12px;border:1px solid var(--line);font-size:15px}
+.stop .row2 .x{background:#8E4A52;border:0;color:#fff}
+.seg2{display:flex;gap:6px;margin:12px 0 0}
+.seg2 button{height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line);font-size:12.5px;color:var(--faint)}
+.seg2 button[aria-pressed="true"]{color:var(--ink);border-color:var(--sub)}
+
+/* ── 잠든 등불 "부모님께" ── */
+.mapbg{position:relative;height:66vh;min-height:420px;max-height:640px;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));background:url(media/village-m-dark.jpg) 50% 40%/cover;overflow:hidden}
+.mapbg::after{content:"";position:absolute;inset:0;background:rgba(10,8,18,.35)}
+.lampx{position:absolute;z-index:2;left:50%;top:14%;width:96px;margin-left:-48px;transform-origin:50% 0;animation:nudge 1.2s cubic-bezier(.3,.6,.3,1) 1}
+.lampx img{display:block;width:100%}
+@keyframes nudge{0%{transform:rotate(0)}25%{transform:rotate(5deg)}55%{transform:rotate(-3deg)}80%{transform:rotate(1deg)}100%{transform:rotate(0)}}
+.whisper{position:absolute;z-index:2;left:50%;top:calc(14% + 250px);transform:translateX(-50%);width:max-content;max-width:86%;text-align:center;font-family:var(--f-story);font-size:17px;line-height:1.6;color:var(--ink);text-shadow:0 1px 10px rgba(0,0,0,.7)}
+.whisper button{margin-top:6px;font-family:var(--f-ui);font-size:13px;color:var(--lantern);text-decoration:underline;text-underline-offset:4px;padding:6px}
+.psheet{position:relative;z-index:3;margin:-56px 0 0;padding:20px;border-radius:20px;background:var(--surface);border:1px solid var(--line)}
+.psheet .to{font-size:12px;letter-spacing:.06em;color:var(--faint)}
+.psheet h3{margin-top:4px;font-family:var(--f-story);font-size:21px;line-height:1.45}
+.psheet p{margin:8px 0 0;font-size:14px;color:var(--sub);word-break:keep-all}
+.psheet .acts{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.flow{margin-top:24px;padding:14px 16px;border-radius:12px;border:1px dashed #4A4366;font-size:13px;color:var(--faint);word-break:keep-all}
+
+/* ── 목록으로 보기 ── */
+.lhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:4px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);font-size:13px;color:var(--sub)}
+.filters button[aria-pressed="true"]{border-color:var(--lantern);color:var(--ink);background:rgba(242,217,160,.07)}
+.moodbtn{font-size:13px;color:var(--sub);text-decoration:underline;text-underline-offset:4px;padding:8px 2px}
+.moodbar{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--lantern)}
+.moodbar button{font-size:12.5px;color:var(--faint);text-decoration:underline;text-underline-offset:3px}
+.house-g{margin-top:22px}
+.house-g h3{display:flex;align-items:baseline;gap:8px;font-family:var(--f-story);font-size:17px;margin-bottom:10px}
+.house-g h3 span{font-family:var(--f-ui);font-size:12px;color:var(--faint)}
+.eps{display:grid;grid-template-columns:1fr;gap:8px}
+.ep{display:grid;grid-template-columns:88px 1fr auto;gap:12px;align-items:center;padding:8px;border-radius:12px;background:var(--surface);border:1px solid var(--line);text-align:left;width:100%}
+.ep:hover{border-color:#4A4366}
+.ep img{width:88px;aspect-ratio:16/10;object-fit:cover;border-radius:8px}
+.ep .t{min-width:0}
+.ep .t b{display:block;font-weight:400;font-family:var(--f-story);font-size:15.5px;line-height:1.4;word-break:keep-all}
+.ep .t small{display:block;font-size:12px;color:var(--faint)}
+.ep .side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-right:6px;font-size:11.5px}
+.tag{padding:0 8px;border-radius:999px;line-height:20px;background:var(--surface-2);color:var(--faint)}
+.tag.free{color:var(--lantern);background:rgba(242,217,160,.1)}
+.heard{color:var(--sub)}
+.ep.dim{opacity:.4}
+.moods{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.moods button{display:flex;justify-content:space-between;align-items:center;height:50px;padding:0 16px;border-radius:12px;border:1px solid var(--line);font-size:15px;text-align:left}
+.moods button span{font-size:12px;color:var(--faint)}
+
+/* ── 빈 상태·오류 ── */
+.states{display:grid;grid-template-columns:1fr;gap:16px;margin-top:8px}
+.st{border-radius:18px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+.st .cap{display:flex;justify-content:space-between;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--faint)}
+.st .cap b{font-weight:400;color:var(--sub)}
+.st .in{padding:22px 20px 20px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.st .kk{width:76px;filter:drop-shadow(0 6px 12px rgba(0,0,0,.45))}
+.st .kk.tilt{transform:rotate(-8deg)}
+.st h3{margin-top:12px;font-family:var(--f-story);font-size:19px;line-height:1.45;word-break:keep-all;text-wrap:balance}
+.st p{margin:6px 0 0;font-size:13.5px;color:var(--sub);word-break:keep-all;max-width:34ch}
+.st .acts{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:16px}
+.st .acts button{height:46px;border-radius:12px;font-size:14.5px}
+.st .acts .p{background:var(--accent);color:#fff}
+.st .acts .g{border:1px solid var(--line);color:var(--sub)}
+.st .pages{display:flex;gap:5px;margin-top:14px}
+.st .pages i{display:block;width:8px;height:12px;border-radius:4px/6px;background:#3E3858}
+.st .pages i.on{background:var(--lantern)}
+.st .faq{width:100%;margin-top:14px;text-align:left;border-top:1px solid var(--line)}
+.st .faq button{display:flex;justify-content:space-between;width:100%;min-height:46px;padding:0 4px;border-bottom:1px solid var(--line);font-size:14px;align-items:center;text-align:left}
+.st .faq svg{width:16px;height:16px;color:var(--faint);flex-shrink:0}
+.st .stars{width:140px;height:44px;margin-top:4px}
+
+@media (min-width:900px){
+  .eps{grid-template-columns:1fr 1fr}
+  .states{grid-template-columns:1fr 1fr}
+  .mapbg{height:520px;border-radius:20px;margin:0}
+  .hero{border-radius:0 0 20px 20px}
+}
+@media (prefers-reduced-motion:reduce){.lampx{animation:none}}
+</style>
+</head>
+<body>
+
+
+<nav class="rv" aria-label="검토용 화면 선택">
+  <span class="lab">부모님 화면</span>
+  <a href="#plans">구독</a>
+  <a href="#manage">구독 관리·해지</a>
+  <a href="#sleeping">잠든 등불 → 부모님께</a>
+  <a href="#list">목록으로 보기</a>
+  <a href="#states">빈 상태·오류</a>
+</nav>
+
+<!-- 구독 -->
+<section class="view" id="plans" aria-labelledby="pH">
+  <div class="hero" role="img" aria-label="지붕 위의 큰 호랑이와 호이"></div>
+  <div class="plans-h">
+    <h2 id="pH">우리 가족 목소리로<br>밤마을 전체를 열어요</h2>
+    <p>할머니, 할아버지 목소리를 더하고, 시즌1 이야기 18편을 모두 들려줄 수 있어요.</p>
+  </div>
+  <div class="cmp" role="table" aria-label="무료와 구독 비교">
+    <div class="row" role="row"><span role="columnheader"></span><span role="columnheader">무료</span><span role="columnheader">구독</span></div>
+    <div class="row" role="row"><b role="cell">가족 목소리</b><span class="n" role="cell">1개</span><span class="y" role="cell">여럿</span></div>
+    <div class="row" role="row"><b role="cell">이야기</b><span class="n" role="cell">7편</span><span class="y" role="cell">18편</span></div>
+    <div class="row" role="row"><b role="cell">한국어 + 영어 글자</b><span class="n" role="cell">—</span><span class="y" role="cell">있음</span></div>
+    <div class="row" role="row"><b role="cell">인터넷 없이 듣기</b><span class="n" role="cell">—</span><span class="y" role="cell">있음</span></div>
+  </div>
+  <div class="pick" role="radiogroup" aria-label="구독 기간" id="pick">
+    <button type="button" class="plan" role="radio" aria-checked="true" data-p="y"><span class="badge">한 달에 4,917원꼴</span><span><b>일 년</b><small>12개월을 한 번에</small></span><span class="pr"><b>59,000원</b><small>1년</small></span></button>
+    <button type="button" class="plan" role="radio" aria-checked="false" data-p="m"><span><b>한 달</b><small>매달 결제</small></span><span class="pr"><b>8,900원</b><small>1개월</small></span></button>
+  </div>
+  <div class="pay">
+    <button class="primary" type="button" id="payBtn">일 년 구독하기 · 59,000원</button>
+    <ul class="terms">
+      <li>다음 결제일 3일 전에 알려 드려요. 언제든 우리 가족 → 구독에서 해지할 수 있어요.</li>
+      <li>카드·간편결제(토스페이먼츠). 해외 카드는 Stripe로 결제돼요.</li>
+      <li><a href="#plans">이용약관</a> · <a href="#plans">환불 안내</a></li>
+    </ul>
+  </div>
+  <button class="quiet" type="button" id="notNow">무료로 계속 들을게요</button>
+</section>
+
+<!-- 구독 관리·해지 -->
+<section class="view" id="manage" aria-labelledby="mH" hidden>
+  <div class="bar"><a class="back" href="#plans" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><h1 id="mH">구독</h1></div>
+  <div class="mine">
+    <div class="row"><span>지금 구독</span><span>일 년 · 59,000원</span></div>
+    <div class="row"><span>다음 결제일</span><span>2027년 11월 6일</span></div>
+    <div class="row"><span>결제 수단</span><span>토스페이 · 신한 1234</span></div>
+    <button class="row" type="button" id="toMonthly"><span>한 달 구독으로 바꾸기</span><span>8,900원</span></button>
+    <button class="row" type="button" id="receipts"><span>결제 내역</span><span>2건</span></button>
+  </div>
+  <button class="ghost" type="button" id="cancelBtn" style="margin-top:12px">구독 해지하기</button>
+  <div class="stop" id="stop" hidden>
+    <h3>구독을 해지할까요?</h3>
+    <ul>
+      <li>2027년 11월 6일까지는 지금처럼 모두 들을 수 있어요.</li>
+      <li>그 뒤에는 무료 이야기 7편과 목소리 1개(엄마)로 돌아가요.</li>
+      <li>할머니, 할아버지 목소리는 지우지 않고 보관해요. 다시 구독하면 그대로 돌아와요.</li>
+    </ul>
+    <div class="row2"><button type="button" class="x" id="doCancel">해지하기</button><button type="button" id="keep">계속 구독하기</button></div>
+  </div>
+  <p class="note" style="margin-top:16px">해지 이유를 묻거나 할인으로 붙잡는 화면은 두지 않아요.</p>
+</section>
+
+<!-- 잠든 등불 → 부모님께 -->
+<section class="view" id="sleeping" aria-labelledby="sH" hidden>
+  <div class="mapbg">
+    <div class="lampx"><img src="media/lamp-dark.png" alt="잠든 등불"></div>
+    <div class="whisper">이 등불은 아직 잠들어 있어요<br><button type="button" id="toParent">부모님께</button></div>
+  </div>
+  <div class="psheet" id="psheet" hidden>
+    <span class="to">부모님께</span>
+    <h3 id="sH">「등불을 잊은 도깨비」는<br>구독하면 들을 수 있어요</h3>
+    <p>지금은 무료 이야기 7편을 들을 수 있어요. 구독하면 18편 모두, 그리고 할머니·할아버지 목소리까지 열려요.</p>
+    <div class="acts">
+      <a class="primary" href="#plans" style="text-decoration:none">구독 알아보기</a>
+      <button class="ghost" type="button" id="freeOnes">오늘은 무료 이야기 듣기</button>
+    </div>
+  </div>
+  <p class="flow">마을 화면엔 자물쇠·가격이 없어요. 아이가 잠든 등불을 누르면 등불이 살짝 흔들리고 "부모님께"만 보여요. 부모님이 누르면 이 안내가 올라오고, 결제 화면으로 바로 가지 않아요.</p>
+</section>
+
+<!-- 목록으로 보기 -->
+<section class="view wide" id="list" aria-labelledby="lH" hidden>
+  <div class="bar"><a class="back" href="/village/" aria-label="마을로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><h1 id="lH">이야기 목록</h1></div>
+  <div class="lhead">
+    <div class="filters" id="filters">
+      <button type="button" aria-pressed="true" data-f="all">전체 18</button>
+      <button type="button" aria-pressed="false" data-f="free">무료 7</button>
+      <button type="button" aria-pressed="false" data-f="heard">들은 이야기</button>
+    </div>
+    <button class="moodbtn" type="button" id="moodBtn">상황으로 고르기</button>
+  </div>
+  <div class="moodbar" id="moodBar" hidden><span id="moodName"></span><button type="button" id="moodClear">지우기</button></div>
+  <div class="moods" id="moods" hidden></div>
+  <div id="houses"></div>
+  <p class="note" style="margin-top:20px">집 순서와 이름은 마을 지도와 같아요. 누르면 재생 전 시트(목소리 · 글자 · 몇 번)가 열려요.</p>
+</section>
+
+<!-- 빈 상태·오류 -->
+<section class="view wide" id="states" aria-labelledby="eH" hidden>
+  <div class="bar"><h1 id="eH">빈 상태 · 오류</h1></div>
+  <p class="note">까치가 나오는 자리예요. 문장은 짧게, 할 일 하나만 보여 줘요.</p>
+  <div class="states">
+    <div class="st"><div class="cap"><b>인터넷이 끊겼을 때</b><span>오프라인</span></div><div class="in">
+      <img class="kk" src="media/magpie.png" alt="">
+      <h3>인터넷이 잠깐 잠들었어요</h3>
+      <p>저장해 둔 이야기 3편은 지금도 들을 수 있어요.</p>
+      <div class="acts"><button class="p" type="button">저장한 이야기 보기</button><button class="g" type="button">다시 연결하기</button></div>
+    </div></div>
+    <div class="st"><div class="cap"><b>이야기를 만드는 중</b><span>새 목소리 · 첫 재생</span></div><div class="in">
+      <img class="kk tilt" src="media/magpie.png" alt="">
+      <h3>까치가 할머니 목소리로<br>이야기를 가져오고 있어요</h3>
+      <div class="pages" aria-label="12쪽 중 2쪽 준비"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <p>3쪽이 준비되면 바로 들을 수 있어요. 나머지는 듣는 동안 준비돼요.</p>
+    </div></div>
+    <div class="st"><div class="cap"><b>녹음이 잘 안 됐을 때</b><span>녹음 실패</span></div><div class="in">
+      <img class="kk" src="media/magpie.png" alt="">
+      <h3>소리가 잘 안 들렸어요</h3>
+      <p>조용한 곳에서 휴대폰을 입에서 한 뼘쯤 떨어뜨리고 다시 읽어 주세요.</p>
+      <div class="acts"><button class="p" type="button">이 문장 다시 읽기</button></div>
+    </div></div>
+    <div class="st"><div class="cap"><b>초대 링크가 지났을 때</b><span>초대받은 가족</span></div><div class="in">
+      <img class="kk" src="media/magpie.png" alt="">
+      <h3>이 초대장은 시간이 지났어요</h3>
+      <p>초대장은 7일 동안 열려요. 보내 준 가족에게 새 초대장을 부탁해 주세요.</p>
+    </div></div>
+    <div class="st"><div class="cap"><b>결제가 안 됐을 때</b><span>결제 실패</span></div><div class="in">
+      <img class="kk" src="media/magpie.png" alt="">
+      <h3>결제가 되지 않았어요</h3>
+      <p>카드 한도나 인증 문제일 수 있어요. 돈은 빠져나가지 않았어요.</p>
+      <div class="acts"><button class="p" type="button">다시 결제하기</button><button class="g" type="button">다른 방법으로 결제하기</button></div>
+    </div></div>
+    <div class="st"><div class="cap"><b>아직 들은 밤이 없을 때</b><span>우리 아이의 밤 · 빈 상태</span></div><div class="in">
+      <svg class="stars" viewBox="0 0 140 44" aria-hidden="true"><circle cx="70" cy="22" r="2.4" fill="#F4ECD8"/><circle cx="40" cy="14" r="1" fill="#F4ECD8" opacity=".4"/><circle cx="104" cy="30" r="1" fill="#F4ECD8" opacity=".4"/></svg>
+      <h3>오늘 밤 첫 별이 떠요</h3>
+      <p>이야기를 하나 들으면 하늘에 별이 하나 생겨요.</p>
+      <div class="acts"><button class="g" type="button">마을로 가기</button></div>
+    </div></div>
+    <div class="st"><div class="cap"><b>도움말</b><span>우리 가족 → 도움말</span></div><div class="in">
+      <img class="kk" src="media/magpie.png" alt="">
+      <h3>무엇이 궁금하세요?</h3>
+      <div class="faq">
+        <button type="button">목소리는 어디에 쓰이나요?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button type="button">아이 휴대폰이 세로로만 보여요<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button type="button">홈 화면에 두는 방법<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button type="button">구독 해지와 환불<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+      <div class="acts"><button class="g" type="button">문의 남기기</button></div>
+    </div></div>
+  </div>
+</section>
+
+<p class="toast" id="toast" role="status"></p>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var toastT;
+  function toast(m){ var t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('on'); }, 2400); }
+
+  /* 라우팅 */
+  var views = ['plans','manage','sleeping','list','states'];
+  function route(){
+    var h = (location.hash || '#plans').slice(1); if (views.indexOf(h) < 0) h = 'plans';
+    views.forEach(function(v){ $(v).hidden = v !== h; });
+    [].forEach.call(document.querySelectorAll('.rv a'), function(a){ a.toggleAttribute('aria-current', a.getAttribute('href') === '#' + h); if (a.getAttribute('href') === '#' + h) a.setAttribute('aria-current','page'); });
+    window.scrollTo(0, 0);
+    if (h === 'sleeping') { $('psheet').hidden = true; var l = document.querySelector('.lampx'); l.style.animation = 'none'; void l.offsetWidth; l.style.animation = ''; }
+  }
+  addEventListener('hashchange', route);
+
+  /* 구독 */
+  var pick = $('pick');
+  pick.addEventListener('click', function(e){
+    var b = e.target.closest('.plan'); if (!b) return;
+    [].forEach.call(pick.children, function(x){ x.setAttribute('aria-checked', x === b); });
+    $('payBtn').textContent = b.dataset.p === 'y' ? '일 년 구독하기 · 59,000원' : '한 달 구독하기 · 8,900원';
+  });
+  $('payBtn').addEventListener('click', function(){ toast('토스페이먼츠 결제창이 열려요 (시안)'); });
+  $('notNow').addEventListener('click', function(){ toast('원래 있던 화면으로 돌아가요'); });
+
+  /* 관리·해지 */
+  $('cancelBtn').addEventListener('click', function(){ $('stop').hidden = false; this.hidden = true; $('keep').focus(); });
+  $('keep').addEventListener('click', function(){ $('stop').hidden = true; $('cancelBtn').hidden = false; });
+  $('doCancel').addEventListener('click', function(){ $('stop').hidden = true; $('cancelBtn').hidden = false; toast('해지했어요. 2027년 11월 6일까지 그대로 들을 수 있어요'); });
+  $('toMonthly').addEventListener('click', function(){ toast('지금 기간이 끝난 뒤 한 달 구독으로 바뀌어요'); });
+  $('receipts').addEventListener('click', function(){ toast('결제 내역과 영수증'); });
+
+  /* 잠든 등불 */
+  $('toParent').addEventListener('click', function(){ $('psheet').hidden = false; $('psheet').scrollIntoView({ behavior:'smooth', block:'nearest' }); });
+  $('freeOnes').addEventListener('click', function(){ location.hash = '#list'; setTimeout(function(){ document.querySelector('[data-f="free"]').click(); }, 50); });
+
+  /* 목록 */
+  var TITLES = ['밤마을에 온 걸 환영해','하늘로 올라간 오누이','달 할머니의 떡','벼를 쪼아 준 참새들','등불을 잊은 도깨비','호랑이 등의 별을 세어요','제비가 물어다 준 씨앗','첫눈 내리는 밤','하늘로 돌아간 날개옷','달에 걸어둔 등불','등불이 하나씩 꺼질 때','구름 이불','집을 지고 다니는 달팽이','빗소리 자장가','별똥별에게 빈 소원','제일 작은 반딧불이','사막의 별, 밤마을의 별','호이가 혼자 잠든 밤'];
+  var FREE = [1,2,4,6,7,9,14], HEARD = [1,2,6];
+  var HOUSES = [
+    ['tiger','큰 호랑이네 집',[1,6,18]], ['moon','달 할머니네 집',[3,10,15]], ['lantern','등불 공방',[5,11,12]], ['swallow','제비 둥지 집',[2,7,9]],
+    ['straw','볏짚단 집',[4,8]], ['snail','달팽이 담장 집',[13,14]], ['firefly','반딧불 덤불 집',[16,17]]
+  ];
+  var MOODS = [['어둠이 무서운 밤',[1,2,11]],['엄마 아빠가 멀리 있는 밤',[10,17,3]],['혼자 자는 밤',[18,13]],['새로운 곳의 첫 밤',[1,9,17]],['잠이 안 오는 밤',[6,12,14,11]],['실수한 날 밤',[5]],['내일이 기다려지는 밤',[15,16]]];
+  var filter = 'all', mood = null;
+  function drawList(){
+    var out = '';
+    HOUSES.forEach(function(h){
+      var eps = h[2].filter(function(e){ return filter === 'all' || (filter === 'free' && FREE.indexOf(e) > -1) || (filter === 'heard' && HEARD.indexOf(e) > -1); });
+      if (!eps.length) return;
+      out += '<div class="house-g"><h3>' + h[1] + '<span>' + h[2].length + '편</span></h3><div class="eps">' + eps.map(function(e){
+        var free = FREE.indexOf(e) > -1, heard = HEARD.indexOf(e) > -1, dim = mood && mood.indexOf(e) < 0;
+        return '<button type="button" class="ep' + (dim ? ' dim' : '') + '" data-e="' + e + '"><img src="media/h-' + h[0] + '.jpg" alt=""><span class="t"><b>' + TITLES[e - 1] + '</b><small>' + e + '편 · 약 4분</small></span><span class="side">' +
+          (free ? '<span class="tag free">무료</span>' : '<span class="tag">구독</span>') + (heard ? '<span class="heard">들었어요</span>' : '') + '</span></button>';
+      }).join('') + '</div></div>';
+    });
+    $('houses').innerHTML = out;
+  }
+  $('filters').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    [].forEach.call(this.children, function(x){ x.setAttribute('aria-pressed', x === b); });
+    filter = b.dataset.f; drawList();
+  });
+  $('moods').innerHTML = MOODS.map(function(m, i){ return '<button type="button" data-i="' + i + '">' + m[0] + '<span>' + m[1].length + '편</span></button>'; }).join('');
+  $('moodBtn').addEventListener('click', function(){ $('moods').hidden = !$('moods').hidden; });
+  $('moods').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if (!b) return;
+    var m = MOODS[+b.dataset.i]; mood = m[1]; $('moodName').textContent = m[0] + ' · ' + m[1].length + '편'; $('moodBar').hidden = false; $('moods').hidden = true; drawList();
+  });
+  $('moodClear').addEventListener('click', function(){ mood = null; $('moodBar').hidden = true; drawList(); });
+  $('houses').addEventListener('click', function(e){
+    var b = e.target.closest('.ep'); if (!b) return; var n = +b.dataset.e;
+    if (FREE.indexOf(n) > -1) location.href = '/reader/';
+    else location.hash = '#plans';
+  });
+
+  drawList();
+  route();
+})();
+</script>
+
+</body>
+</html>

@@ -465,7 +465,7 @@ button.item:hover{background:rgba(255,255,255,.025)}
 
   $('addBtn').addEventListener('click', function(){ invite(null); });
   $('keepBtn').addEventListener('click', function(){ inv.k = null; openSheet('<h3 id="shH">목소리 지키기</h3><p class="lede">계정을 연결하면 휴대폰을 바꿔도 우리 가족 목소리와 밤 기록이 남아요.</p><div class="auth" id="auth"><button type="button" class="k">카카오로 계속하기</button><button type="button" class="g">Google로 계속하기</button><button type="button">이메일로 계속하기</button></div>'); $('auth').addEventListener('click', function(e){ if (!e.target.closest('button')) return; st.account = true; closeSheet(); render(); toast('목소리를 지켰어요'); }); });
-  $('planRow').addEventListener('click', function(){ if (st.plan === 'free') { inv.k = null; inv.name = ''; stepPlanOnly(); } else toast('구독 관리 — 해지는 확인 한 번 뒤 바로 돼요'); });
+  $('planRow').addEventListener('click', function(){ if (st.plan === 'free') { inv.k = null; inv.name = ''; stepPlanOnly(); } else location.href = '/parents/#manage'; });
   function stepPlanOnly(){ stepPlan(); $('paid').onclick = function(){ st.plan = 'sub'; closeSheet(); render(); toast('구독을 시작했어요'); }; }
   $('acctRow').addEventListener('click', function(){ if (!st.account) $('keepBtn').click(); else toast('계정 연결 끊기는 확인 한 번 뒤 돼요'); });
   $('wipeRow').addEventListener('click', function(){ openSheet('<h3 id="shH">목소리와 기록을 모두 지울까요?</h3><p class="lede">가족 목소리, 목소리로 만든 이야기, 우리 아이의 밤 기록이 모두 사라지고 되돌릴 수 없어요.</p><div class="confirm" style="margin-top:18px"><div class="row" style="margin-top:0"><button type="button" class="x" id="wDel">모두 지우기</button><button type="button" id="wKeep">그대로 두기</button></div></div>'); $('wKeep').focus(); $('wKeep').onclick = closeSheet; $('wDel').onclick = function(){ closeSheet(); toast('시안에서는 지우지 않아요'); }; });
