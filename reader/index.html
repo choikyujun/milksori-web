@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#12101C">
+<title>MilkSori 그림책 리더</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Gowun+Dodum&display=swap">
+<style>
+/* layout: 화면 전체 = 밤색. 가운데 16:9 무대(그림 한 장 + 하단 글자 띠). 모바일 세로 = 눕혀 달라는 안내(첫 번은 까치) → 눕히면 바로 재생.
+   흐름: 재생 전 시트(보통 밤) → 리더 12쪽 → 맺음 뒤 어둡게 꺼짐. 첫 밤만 와 순간 화면. 글꼴: 이야기 = 고운바탕, 안내 = 고운돋움, 굵기 400 하나. */
+:root{
+  --night:#0E0C16; --bg:#12101C; --surface:#1D1A2B; --surface-2:#262238; --ink:#F2EFFA; --sub:#C9C2DD; --faint:#9E97B8; --line:#332D48;
+  --accent:#7166AE; --accent-hi:#8479C2; --lantern:#F2D9A0; --hanji:#F3E8D2; --hanji-ink:#2A2236;
+  --f-story:"Gowun Batang","Nanum Myeongjo","AppleMyungjo",serif;
+  --f-ui:"Gowun Dodum",-apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:var(--night);overflow:hidden}
+body{color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+  padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px));padding-block:0}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible{outline:2px solid var(--lantern);outline-offset:3px}
+
+/* 무대: 화면 안에서 가장 큰 16:9 */
+.room{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--night)}
+.stage{position:relative;width:min(100vw,177.78vh);aspect-ratio:16/9;max-height:100vh;overflow:hidden;background:#000;container-type:size;user-select:none}
+.room.rot .stage{flex-shrink:0;width:min(100vh,177.78vw);max-width:none;max-height:none;transform:rotate(90deg)}
+
+/* 그림 */
+.pic{position:absolute;inset:0;opacity:0;transition:opacity 1.4s ease}
+.pic.on{opacity:1}
+.pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:var(--ox,50%) var(--oy,50%);transform:scale(var(--z,1));transition:transform 14s linear}
+.pic.on.drift img{transform:scale(calc(var(--z,1) * 1.03))}
+.pic .lit{opacity:0;transition:opacity 2.6s ease}
+.pic.lightup .lit{opacity:1}
+.pic .shade{position:absolute;inset:0;background:#05040A;opacity:0;transition:opacity 4s ease}
+.pic.dim .shade{opacity:.78}
+.temp{position:absolute;right:2.2cqw;top:15cqh;padding:.4cqh 1cqw;border-radius:999px;background:rgba(14,12,22,.6);color:var(--faint);font-size:clamp(10px,2cqh,13px);opacity:.9}
+
+/* 하단 글자 띠: 삽화 하단 20%, 이중언어 최대 28% */
+.band{position:absolute;left:0;right:0;bottom:0;min-height:20cqh;max-height:28cqh;padding:3.2cqh 7cqw 3.6cqh;display:flex;flex-direction:column;justify-content:flex-end;gap:.8cqh;
+  background:linear-gradient(180deg,rgba(10,8,18,0) 0,rgba(10,8,18,.62) 34%,rgba(10,8,18,.82) 100%);transition:opacity .6s}
+.band.off{opacity:0;pointer-events:none}
+.txt{margin:0;font-family:var(--f-story);font-size:clamp(15px,4.6cqh,34px);line-height:1.55;text-align:center;word-break:keep-all;text-wrap:balance;color:var(--ink);text-shadow:0 1px 8px rgba(0,0,0,.55)}
+.txt span{opacity:.42;transition:opacity .5s}
+.txt span.done{opacity:.78}
+.txt span.now{opacity:1;color:#FFF8E8}
+.txt.en{font-family:var(--f-story)}
+.sub{margin:0;min-height:1.5em;font-family:var(--f-story);font-size:clamp(12px,3.4cqh,25px);line-height:1.5;text-align:center;color:var(--sub);text-shadow:0 1px 8px rgba(0,0,0,.55);transition:opacity .4s}
+.refrain .txt{font-size:clamp(17px,5.4cqh,40px);letter-spacing:.02em}
+.refrain .txt span.now{color:var(--lantern)}
+.refrain .txt.soft span.now{opacity:.7}
+
+/* 크롬: 누르면 나타났다 3초 뒤 사라짐 */
+.chrome{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .45s}
+.chrome.show{opacity:1}
+.chrome.show .hit{pointer-events:auto}
+.top{position:absolute;left:0;right:0;top:0;height:20cqh;padding:3cqh 3cqw 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:linear-gradient(180deg,rgba(10,8,18,.7),rgba(10,8,18,0))}
+.ibtn{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink);background:rgba(18,16,28,.5)}
+.ibtn svg{width:20px;height:20px}
+.ibtn[aria-pressed="false"]{color:var(--faint)}
+.tools{display:flex;gap:8px;align-items:center}
+.chip{height:36px;padding:0 14px;border-radius:999px;background:rgba(18,16,28,.6);color:var(--sub);font-size:13px;display:flex;align-items:center;gap:6px}
+.chip svg{width:16px;height:16px}
+.ticks{display:flex;gap:6px;align-items:center;margin-top:14px}
+.ticks i{display:block;width:clamp(10px,2.4cqw,22px);height:3px;border-radius:2px;background:rgba(242,239,250,.22);transition:background .5s}
+.ticks i.done{background:rgba(242,217,160,.55)}
+.ticks i.now{background:var(--lantern)}
+.side{position:absolute;top:22cqh;bottom:30cqh;width:18cqw;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.side.l{left:0}.side.r{right:0}
+.side span{width:44px;height:44px;border-radius:50%;background:rgba(18,16,28,.45);display:flex;align-items:center;justify-content:center}
+.side svg{width:20px;height:20px}
+.big{position:absolute;left:50%;top:44%;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;background:rgba(113,102,174,.92);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+.big svg{width:28px;height:28px}
+
+/* 끝: 어둡게 꺼짐 */
+.end{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity 3.5s ease;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6cqh}
+.end.on{opacity:1;pointer-events:auto}
+.end .home{opacity:0;transition:opacity 1.2s ease 4s;color:var(--faint);font-size:13px;padding:12px 16px}
+.end.on .home{opacity:1}
+
+/* 와 순간(첫 밤만) */
+.wow{position:absolute;inset:0;display:grid;grid-template-columns:44% 1fr;align-items:center;gap:5cqw;padding:0 7cqw;background:var(--bg);opacity:0;pointer-events:none;transition:opacity 1.6s ease}
+.wow.on{opacity:1;pointer-events:auto}
+.wow .ph{position:relative;aspect-ratio:16/10;border-radius:14px;overflow:hidden;background:url(media/p08.jpg) 50% 40%/cover;box-shadow:0 12px 36px rgba(0,0,0,.5)}
+.wow .ph::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(242,217,160,.18);border-radius:14px}
+.wow h2{margin:0;font-family:var(--f-story);font-weight:400;font-size:clamp(20px,6cqh,38px);line-height:1.4;text-wrap:balance;word-break:keep-all}
+.wow p{margin:1.6cqh 0 0;color:var(--sub);font-size:clamp(13px,3.3cqh,17px);line-height:1.7;word-break:keep-all}
+.wow .acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:4cqh}
+.wow .acts button{height:48px;padding:0 22px;border-radius:14px;font-size:15px}
+.wow .go{background:var(--accent);color:#fff}
+.wow .go:hover{background:var(--accent-hi)}
+.wow .later{border:1px solid var(--line);color:var(--sub)}
+.wow .fine{margin-top:1.4cqh;font-size:12px;color:var(--faint)}
+
+/* 재생 전 시트(보통 밤) */
+.sheet{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,8,18,.62);backdrop-filter:blur(3px);opacity:1;transition:opacity .4s}
+.sheet.gone{opacity:0;pointer-events:none}
+.card{width:min(560px,86cqw);max-height:92cqh;overflow:auto;padding:clamp(16px,4cqh,28px) clamp(18px,3.4cqw,32px);border-radius:20px;background:rgba(29,26,43,.96);border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.card .head{display:flex;gap:14px;align-items:center}
+.card .head img{width:clamp(72px,19cqh,120px);aspect-ratio:16/9;object-fit:cover;border-radius:8px}
+.card .head small{display:block;color:var(--faint);font-size:12px}
+.card .head b{display:block;font-family:var(--f-story);font-weight:400;font-size:clamp(17px,4.4cqh,22px);line-height:1.35}
+.rows{display:flex;flex-direction:column;gap:clamp(8px,2cqh,14px);margin-top:clamp(10px,3cqh,20px)}
+.row{display:grid;grid-template-columns:56px 1fr;gap:8px;align-items:center}
+.row>span{font-size:13px;color:var(--faint)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);color:var(--sub);font-size:13px;display:flex;align-items:center;gap:6px}
+.seg button[aria-pressed="true"]{border-color:var(--lantern);color:var(--ink);background:rgba(242,217,160,.08)}
+.seg .lock{font-size:11px;color:var(--faint)}
+.play{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:50px;margin-top:clamp(12px,3.4cqh,22px);border-radius:14px;background:var(--accent);color:#fff;font-size:16px}
+.play:hover{background:var(--accent-hi)}
+.play svg{width:18px;height:18px}
+.review{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;margin-top:10px}
+.review button{font-size:12px;color:var(--faint);text-decoration:underline;text-underline-offset:3px;padding:6px 2px}
+
+/* 세로로 들었을 때 */
+.tilt{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px max(24px,env(safe-area-inset-left,0px));text-align:center;
+  background:var(--bg) url(media/p08.jpg) 50% 40%/cover}
+.tilt::before{content:"";position:absolute;inset:0;background:rgba(14,12,22,.82);backdrop-filter:blur(6px)}
+.tilt>*{position:relative}
+.tilt .kk{width:104px;filter:drop-shadow(0 8px 16px rgba(0,0,0,.45))}
+.tilt .ico{width:44px;height:44px;color:var(--sub)}
+.tilt h2{margin:8px 0 0;font-family:var(--f-story);font-weight:400;font-size:24px;line-height:1.45;word-break:keep-all}
+.tilt p{margin:0;color:var(--sub);font-size:14px;word-break:keep-all}
+.tilt button{margin-top:16px;color:var(--faint);font-size:13px;text-decoration:underline;text-underline-offset:3px;padding:10px}
+@media (orientation:portrait) and (max-width:820px){ .room:not(.rot) ~ .tilt.armed{display:flex} }
+
+@media (prefers-reduced-motion:reduce){ .pic img{transition:none!important;transform:scale(var(--z,1))!important} .pic,.pic .lit,.pic .shade,.end,.wow{transition-duration:.3s} }
+</style>
+</head>
+<body>
+
+
+<div class="room" id="room">
+  <div class="stage" id="stage" aria-label="그림책 1편 밤마을에 온 걸 환영해">
+    <div id="pics"></div>
+
+    <div class="band" id="band" aria-live="polite">
+      <p class="txt" id="txt"></p>
+      <p class="sub" id="sub"></p>
+    </div>
+
+    <div class="chrome" id="chrome">
+      <div class="top">
+        <button class="ibtn hit" id="close" type="button" aria-label="그림책 닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <div class="ticks" id="ticks" aria-hidden="true"></div>
+        <div class="tools">
+          <span class="chip" id="timerChip" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span id="timerTxt"></span></span>
+          <button class="chip hit" id="langBtn" type="button" aria-label="글자 언어 바꾸기">한국어</button>
+          <button class="ibtn hit" id="textBtn" type="button" aria-pressed="true" aria-label="글자 보이기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 6h14M12 6v13M8.5 19h7"/></svg></button>
+          <button class="ibtn hit" id="pauseBtn" type="button" aria-label="잠깐 멈추기"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5" width="3.4" height="14" rx="1.2"/><rect x="13.6" y="5" width="3.4" height="14" rx="1.2"/></svg></button>
+        </div>
+      </div>
+      <button class="side l hit" id="prev" type="button" aria-label="앞 쪽"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span></button>
+      <button class="side r hit" id="next" type="button" aria-label="다음 쪽"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span></button>
+    </div>
+    <button class="big" id="resume" type="button" aria-label="이어서 듣기" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg></button>
+
+    <div class="end" id="end"><button class="home" id="home" type="button">마을로 돌아가기</button></div>
+
+    <div class="wow" id="wow" aria-hidden="true">
+      <div class="ph" role="img" aria-label="큰 호랑이가 호이의 이름을 불러 주는 장면"></div>
+      <div>
+        <h2>내 목소리로<br>첫 이야기를 들려줬어요</h2>
+        <p>할머니, 할아버지 목소리도 밤마을에 더할 수 있어요. 같은 이야기를 다른 가족의 목소리로 들려줘요.</p>
+        <div class="acts">
+          <button class="go" type="button" id="addVoice">가족 목소리 더하기</button>
+          <button class="later" type="button" id="toVillage">마을로 가기</button>
+        </div>
+        <p class="fine">가족 목소리는 구독하면 열려요 · 월 8,900원</p>
+      </div>
+    </div>
+
+    <div class="sheet" id="sheet">
+      <div class="card" role="dialog" aria-labelledby="shTitle">
+        <div class="head">
+          <img src="media/p08.jpg" alt="">
+          <div><small>1편 · 약 4분</small><b id="shTitle">밤마을에 온 걸 환영해</b></div>
+        </div>
+        <div class="rows">
+          <div class="row"><span>목소리</span><div class="seg" data-key="voice"><button type="button" aria-pressed="true" data-v="엄마">엄마</button><button type="button" aria-pressed="false" data-v="아빠">아빠</button><button type="button" aria-pressed="false" data-v="+" data-add>목소리 더하기</button></div></div>
+          <div class="row"><span>글자</span><div class="seg" data-key="lang"><button type="button" aria-pressed="true" data-v="ko">한국어</button><button type="button" aria-pressed="false" data-v="en">English</button><button type="button" aria-pressed="false" data-v="both">한 + 영 <span class="lock">구독</span></button></div></div>
+          <div class="row"><span>몇 번</span><div class="seg" data-key="times"><button type="button" aria-pressed="true" data-v="1">한 번</button><button type="button" aria-pressed="false" data-v="2">두 번</button><button type="button" aria-pressed="false" data-v="3">세 번</button></div></div>
+        </div>
+        <button class="play" type="button" id="start"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12-7.5z"/></svg>읽어 주기</button>
+        <div class="review">
+          <button type="button" id="rvFirst">첫 밤으로 보기</button>
+          <button type="button" id="rvFast">빨리 넘겨 보기</button>
+          <button type="button" id="rvEnd">맺음부터</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tilt" id="tilt">
+  <img class="kk" id="tiltKk" src="media/magpie.png" alt="까치">
+  <svg class="ico" id="tiltIco" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="14" rx="1.5"/><path d="M4 15a8 8 0 0 0 8 6"/><path d="M9 21h3v-3"/></svg>
+  <h2>휴대폰을 눕혀 주세요</h2>
+  <p>그림책이 가로로 펼쳐져요</p>
+  <button type="button" id="keepPortrait">이대로 볼게요</button>
+</div>
+
+<script>
+(function(){
+  /* 1편 — 04 스크립트 v1.2. 블록 = [한, EN]. 싱크 단위 = 대사 블록 */
+  var PAGES = [
+    {img:'village-pc-dark.jpg', lit:'village-pc-lit.jpg', temp:true, ritual:'on', b:[['오늘 밤도, 밤마을에 온 걸 환영해.','Welcome back to Night Village, tonight and every night.']]},
+    {img:'village-pc-lit.jpg', z:1.5, ox:'40%', oy:'62%', temp:true, b:[['해가 산 너머로 내려가면, 밤마을이 눈을 떠.','When the sun slips behind the mountains, Night Village opens its eyes.'],['지붕 위로 달이 올라오고, 골목마다 등불이 하나, 둘, 켜지지.','The moon climbs over the rooftops, and down every lane the lanterns light up, one, two, three.']]},
+    {img:'p05.jpg', z:1.7, ox:'30%', oy:'45%', temp:true, b:[['제일 높은 지붕 위에, 아주 작은 호랑이가 앉아 있었어.','On the very highest roof sat a very small tiger.'],['털은 아직 밤의 색을 다 입지 못해서, 달빛처럼 연했지.','Her fur hadn’t yet taken on the color of night, so it was pale, like moonlight.']]},
+    {img:'p05.jpg', z:2.3, ox:'31%', oy:'38%', temp:true, b:[['작은 호랑이는 잠이 오지 않았어.','The small tiger couldn’t sleep.'],['밤은 너무 넓고, 너무 조용했거든.','The night was so wide, and so quiet.'],['“나, 안 졸려.” 작은 호랑이가 말했어.','“I’m not sleepy,” the small tiger said.']]},
+    {img:'p05.jpg', b:[['그때, 푸드덕. 꼬리 끝이 보랏빛인 까치가 지붕에 내려앉았어.','Just then, flutter-flutter. A magpie with a purple-tipped tail landed on the roof.'],['“온다, 온다. 큰 호랑이가 와.”','“He’s coming, he’s coming. The big tiger is coming.”'],['까치는 그 말만 하고 다시 날아갔지.','That was all the magpie said, and off it flew.']]},
+    {img:'p06.jpg', b:[['지붕 너머로, 아주 크고 아주 조용한 그림자가 올라왔어.','Over the rooftops rose a shadow, very big and very quiet.'],['밤의 색을 입은 호랑이였어.','It was a tiger wearing the color of night.'],['줄무늬 사이사이에 별이 반짝였지.','Between his stripes, stars were twinkling.']]},
+    {img:'tail.jpg', z:1.25, ox:'40%', oy:'40%', temp:true, b:[['작은 호랑이는 눈을 꼭 감았어.','The small tiger squeezed her eyes shut.'],['그런데 아무 일도 일어나지 않았어.','But nothing happened at all.'],['살짝 떠 보니, 큰 호랑이가 옆에 앉아 달을 보고 있었어.','When she peeked, the big tiger was sitting beside her, looking at the moon.']]},
+    {img:'p08.jpg', b:[['“넌 이름이 뭐니?” 큰 호랑이가 물었어.','“What’s your name?” asked the big tiger.'],['“몰라.” 작은 호랑이가 말했어.','“I don’t know,” said the small tiger.'],['큰 호랑이는 한참 생각하더니 말했어.','The big tiger thought for a long moment.'],['“그럼, 호이. 호이가 좋겠다.”','“Then… Hoi. Hoi sounds just right.”']]},
+    {img:'tail.jpg', z:1.9, ox:'78%', oy:'55%', temp:true, b:[['“밤은 왜 이렇게 깜깜해?” 호이가 물었어.','“Why is the night so dark?” asked Hoi.'],['“깜깜해야 별이 보이지.” 큰 호랑이가 말했어.','“It has to be dark, or you couldn’t see the stars,” said the big tiger.'],['“봐, 내 등에도 있잖아.”','“Look, there are some on my back, too.”']]},
+    {img:'tail.jpg', z:1.7, ox:'40%', oy:'72%', temp:true, b:[['큰 호랑이가 긴 꼬리를 스르르 끌어와 호이를 덮어 주었어. 이불처럼 포근했지.','The big tiger slowly curled his long tail around Hoi, soft as a blanket.'],['“나 아직 안 졸려.” 호이가 한쪽 눈만 뜨고 말했어.','“I’m still not sleepy,” said Hoi, with one eye open.'],['“알아.” 큰 호랑이가 말했어.','“I know,” said the big tiger.', 3000]]},
+    {img:'tail.jpg', temp:true, refrain:true, b:[['자장자장 우리 호이, 달도 자고 별도 자.','Hush now, hush now, little Hoi, moon’s asleep and stars are too.']]},
+    {img:'tail.jpg', z:1.15, ox:'40%', oy:'60%', temp:true, ritual:'off', b:[['호이는 큰 호랑이의 꼬리를 꼭 끌어안고 잠들었어.','Hoi hugged the big tiger’s tail tight, and fell asleep.'],['잘 자, 내일 밤 또 만나.','Good night. See you tomorrow night.']]}
+  ];
+  var $ = function(id){ return document.getElementById(id); };
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var pics = $('pics'), txt = $('txt'), sub = $('sub'), band = $('band'), chrome = $('chrome'), ticks = $('ticks');
+  var st = { page:0, block:-1, playing:false, lang:'ko', text:true, first:false, speed:1, times:1, round:1, rep:0 };
+  var T = null, hideT = null, picEls = [];
+
+  /* 그림 */
+  PAGES.forEach(function(p, i){
+    var d = document.createElement('div'); d.className = 'pic';
+    d.style.setProperty('--z', p.z || 1); if (p.ox) d.style.setProperty('--ox', p.ox); if (p.oy) d.style.setProperty('--oy', p.oy);
+    d.innerHTML = '<img src="media/' + p.img + '" alt="" loading="' + (i < 2 ? 'eager' : 'lazy') + '">' + (p.lit ? '<img class="lit" src="media/' + p.lit + '" alt="">' : '') +
+      '<span class="shade"></span>' + (p.temp ? '<span class="temp">임시 그림 · p' + (i + 1) + ' 생산 전</span>' : '');
+    pics.appendChild(d); picEls.push(d);
+    ticks.appendChild(document.createElement('i'));
+  });
+
+  function render(){
+    var p = PAGES[st.page], primary = st.lang === 'en' ? 1 : 0;
+    picEls.forEach(function(el, i){ el.classList.toggle('on', i === st.page); });
+    [].forEach.call(ticks.children, function(t, i){ t.className = i < st.page ? 'done' : (i === st.page ? 'now' : ''); });
+    band.classList.toggle('refrain', !!p.refrain);
+    txt.classList.toggle('en', primary === 1);
+    txt.classList.toggle('soft', !!p.refrain && st.rep === 1);
+    txt.innerHTML = p.b.map(function(b, i){
+      var c = i < st.block ? 'done' : (i === st.block ? 'now' : '');
+      return '<span class="' + c + '">' + b[primary] + '</span>';
+    }).join(' ');
+    var cur = p.b[Math.min(Math.max(st.block, 0), p.b.length - 1)];
+    sub.hidden = st.lang !== 'both'; sub.textContent = st.lang === 'both' ? cur[1] : '';
+    sub.style.opacity = st.block < 0 ? 0 : 1;
+  }
+
+  /* 낭독 흉내: 블록 길이에 비례, 쪽 사이 2초 */
+  function dur(b){ return (b[2] || 0) + Math.max(1800, b[0].length * 115); }
+  function enterPage(n){
+    clearTimeout(T); st.page = n; st.block = -1; st.rep = 0;
+    var el = picEls[n], p = PAGES[n];
+    el.classList.remove('drift', 'lightup', 'dim'); void el.offsetWidth;
+    render();
+    if (!reduce) requestAnimationFrame(function(){ el.classList.add('drift'); });
+    if (p.ritual === 'on') setTimeout(function(){ el.classList.add('lightup'); }, 700 / st.speed);
+    if (st.playing) T = setTimeout(nextBlock, (p.ritual === 'on' ? 2600 : 1200) / st.speed);
+  }
+  function nextBlock(){
+    var p = PAGES[st.page];
+    if (st.block < p.b.length - 1) { st.block++; render(); T = setTimeout(nextBlock, dur(p.b[st.block]) / st.speed); return; }
+    if (p.refrain && st.rep === 0) { st.rep = 1; st.block = -1; render(); T = setTimeout(nextBlock, 1400 / st.speed); return; } /* 후렴 두 번, 두 번째는 더 작게 */
+    if (p.refrain && st.round < st.times) { st.block = p.b.length; render(); T = setTimeout(function(){ st.round++; roundChip(); enterPage(1); }, 2600 / st.speed); return; } /* 같은 이야기 다시: 여는 인사는 첫 번만, 맺음·등불 꺼짐은 마지막 번만 → p2부터 */
+    if (p.ritual === 'off') { st.block = p.b.length; render(); picEls[st.page].classList.add('dim'); T = setTimeout(finish, 3800 / st.speed); return; }
+    if (st.page < PAGES.length - 1) { st.block = p.b.length; render(); T = setTimeout(function(){ enterPage(st.page + 1); }, 2000 / st.speed); }
+  }
+  function finish(){
+    st.playing = false; band.classList.add('off'); chrome.classList.remove('show');
+    if (st.first) { $('wow').classList.add('on'); $('wow').setAttribute('aria-hidden', 'false'); }
+    else $('end').classList.add('on');
+  }
+
+  function play(){ st.playing = true; $('resume').hidden = true; setPauseIcon(); if (st.block < 0 && !T) enterPage(st.page); else T = setTimeout(nextBlock, 600 / st.speed); }
+  function pause(){ st.playing = false; clearTimeout(T); T = null; $('resume').hidden = false; setPauseIcon(); showChrome(true); }
+  var icPause = $('pauseBtn').innerHTML, icPlay = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12-7.5z"/></svg>';
+  function roundChip(){ $('timerChip').hidden = st.times < 2; $('timerTxt').textContent = st.round + ' / ' + st.times + '번'; }
+  function setPauseIcon(){ $('pauseBtn').innerHTML = st.playing ? icPause : icPlay; $('pauseBtn').setAttribute('aria-label', st.playing ? '잠깐 멈추기' : '이어서 듣기'); }
+
+  function showChrome(stay){ chrome.classList.add('show'); clearTimeout(hideT); if (!stay && st.playing) hideT = setTimeout(function(){ chrome.classList.remove('show'); }, 3000); }
+  $('stage').addEventListener('click', function(e){
+    if (!$('sheet').classList.contains('gone') || e.target.closest('.hit,.big,.wow,.end')) return;
+    if (chrome.classList.contains('show')) { chrome.classList.remove('show'); } else showChrome();
+  });
+  chrome.addEventListener('click', function(e){ if (e.target.closest('.hit')) showChrome(); });
+  $('pauseBtn').addEventListener('click', function(){ st.playing ? pause() : play(); });
+  $('resume').addEventListener('click', function(e){ e.stopPropagation(); play(); });
+  function jump(d){ var n = st.page + d; if (n < 0 || n >= PAGES.length) return; clearTimeout(T); T = null; enterPage(n); }
+  $('prev').addEventListener('click', function(){ jump(-1); });
+  $('next').addEventListener('click', function(){ jump(1); });
+  document.addEventListener('keydown', function(e){
+    if (!$('sheet').classList.contains('gone')) return;
+    if (e.key === 'ArrowRight') jump(1); else if (e.key === 'ArrowLeft') jump(-1); else if (e.key === ' ') { e.preventDefault(); st.playing ? pause() : play(); }
+  });
+  var langs = ['ko', 'both', 'en'], langName = { ko:'한국어', both:'한 + 영', en:'English' };
+  $('langBtn').addEventListener('click', function(){ st.lang = langs[(langs.indexOf(st.lang) + 1) % 3]; this.textContent = langName[st.lang]; render(); });
+  $('textBtn').addEventListener('click', function(){ st.text = !st.text; this.setAttribute('aria-pressed', st.text); this.setAttribute('aria-label', st.text ? '글자 숨기기' : '글자 보이기'); band.classList.toggle('off', !st.text); });
+  $('close').addEventListener('click', function(){ pause(); toSheet(); });
+  $('home').addEventListener('click', function(){ location.href = '/village/'; });
+  $('toVillage').addEventListener('click', function(){ location.href = '/village/'; });
+  $('addVoice').addEventListener('click', function(){ location.href = '/family/'; });
+
+  /* 재생 전 시트 */
+  [].forEach.call(document.querySelectorAll('.seg'), function(seg){
+    seg.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b || b.hasAttribute('data-add')) return;
+      [].forEach.call(seg.children, function(x){ x.setAttribute('aria-pressed', x === b); });
+      var k = seg.dataset.key;
+      if (k === 'lang') st.lang = b.dataset.v;
+      if (k === 'times') st.times = +b.dataset.v;
+    });
+  });
+  function begin(opts){
+    opts = opts || {};
+    st.first = !!opts.first; st.speed = opts.fast ? 4 : 1;
+    $('langBtn').textContent = langName[st.lang];
+    st.round = 1; roundChip();
+    $('sheet').classList.add('gone'); $('end').classList.remove('on'); $('wow').classList.remove('on'); band.classList.toggle('off', !st.text);
+    st.page = opts.page || 0; st.block = -1; T = null; st.playing = true; setPauseIcon(); $('resume').hidden = true;
+    enterPage(st.page);
+  }
+  function toSheet(){
+    clearTimeout(T); T = null; st.playing = false; chrome.classList.remove('show');
+    $('end').classList.remove('on'); $('wow').classList.remove('on'); $('resume').hidden = true;
+    $('sheet').classList.remove('gone'); st.page = 0; st.block = -1; enterPageStatic();
+  }
+  function enterPageStatic(){ picEls.forEach(function(el, i){ el.classList.remove('drift','lightup','dim'); el.classList.toggle('on', i === 7); }); txt.innerHTML = ''; sub.textContent = ''; }
+  $('start').addEventListener('click', function(){ begin(); });
+  $('rvFirst').addEventListener('click', function(){ begin({ first:true }); });
+  $('rvFast').addEventListener('click', function(){ begin({ fast:true, first:st.first }); });
+  $('rvEnd').addEventListener('click', function(){ begin({ page:9, fast:true, first:true }); });
+
+  /* 세로로 들었을 때: 첫 번은 까치, 이후는 아이콘 */
+  var tilt = $('tilt'), seen = false;
+  try { seen = localStorage.getItem('ms_tilt_seen') === '1'; } catch (e) {}
+  tilt.classList.add('armed');
+  $('tiltKk').hidden = seen; $('tiltIco').hidden = !seen;
+  function markSeen(){ try { localStorage.setItem('ms_tilt_seen', '1'); } catch (e) {} }
+  matchMedia('(orientation: landscape)').addEventListener('change', function(m){ if (m.matches) markSeen(); });
+  $('keepPortrait').addEventListener('click', function(){ $('room').classList.add('rot'); markSeen(); });
+
+  if (location.hash === '#first') begin({ first:true });
+  else enterPageStatic();
+})();
+</script>
+
+</body>
+</html>

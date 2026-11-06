@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#12101C">
+<title>MilkSori 첫 밤</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Gowun+Dodum&display=swap">
+<style>
+/* layout: 한 화면 한 단계. 모바일 = 전체 높이 한 열 / PC = 어두운 마을 위 가운데 한 열(폭 460). 환영(큰 호랑이·호이) → 목소리 동의 → 녹음(문장마다 창문에 불) → 1편 준비. 글꼴: 이야기 = 고운바탕, 안내 = 고운돋움, 굵기 400 하나 */
+:root{
+  --bg:#12101C; --surface:#1D1A2B; --surface-2:#262238; --ink:#F2EFFA; --sub:#C9C2DD; --faint:#9E97B8; --line:#332D48;
+  --accent:#7166AE; --accent-hi:#8479C2; --on-accent:#FFFFFF; --lantern:#F2D9A0;
+  --hanji:#F3E8D2; --hanji-ink:#2A2236; --hanji-sub:#6B6178; --wood:#5A4636; --danger:#F0A8A0;
+  --f-story:"Gowun Batang","Nanum Myeongjo","AppleMyungjo",serif;
+  --f-ui:"Gowun Dodum",-apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;background:var(--bg)}
+body{margin:0;color:var(--ink);font-family:var(--f-ui);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible+.box{outline:2px solid var(--lantern);outline-offset:3px}
+
+.backdrop{position:fixed;inset:0;z-index:0;background:var(--bg) url(media/village-m-dark.jpg) center/cover no-repeat;filter:blur(6px) brightness(.38) saturate(.8);transform:scale(1.06)}
+@media (min-width:900px){.backdrop{background-image:url(media/village-pc-dark.jpg)}}
+
+.app{position:relative;z-index:1;max-width:460px;min-height:100%;margin:0 auto;display:flex;flex-direction:column}
+.bar{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;padding-top:env(safe-area-inset-top,0px)}
+.back{width:44px;height:44px;margin-left:-12px;border:0;border-radius:50%;background:transparent;color:var(--sub);display:flex;align-items:center;justify-content:center}
+.back[hidden]{display:flex!important;visibility:hidden}
+.mark{font-family:var(--f-story);font-weight:400;font-size:18px}
+.steps{display:flex;gap:8px;align-items:flex-end}
+.steps i{display:block;width:8px;height:12px;border-radius:4px/6px;background:#3E3858;box-shadow:inset 0 0 0 1px #57507A;transition:background .4s,box-shadow .4s}
+.steps i.on{background:var(--lantern);box-shadow:none}
+.steps i.done{background:#C9B488;box-shadow:none}
+.lang{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:rgba(29,26,43,.7);color:var(--sub);font-size:13px}
+
+.screen{flex:1;display:flex;flex-direction:column;padding-block:8px calc(24px + env(safe-area-inset-bottom,0px))}
+.screen[hidden]{display:none}
+.screen.enter{animation:enter .55s cubic-bezier(.2,.8,.2,1) both}
+@keyframes enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+h1{margin:0;font-family:var(--f-story);font-weight:400;font-size:28px;line-height:1.45;text-wrap:balance;word-break:keep-all}
+.lede{margin:12px 0 0;color:var(--sub);font-size:16px;line-height:1.7;word-break:keep-all}
+.grow{flex:1}
+.primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:56px;border:0;border-radius:14px;background:var(--accent);color:var(--on-accent);font-size:17px;font-weight:400;transition:background .2s,transform .15s}
+.primary:hover{background:var(--accent-hi)}
+.primary:active{transform:scale(.985)}
+.quiet{display:block;margin:12px auto 0;border:0;background:transparent;color:var(--faint);font-size:14px;padding:8px}
+.note{margin:12px 0 0;text-align:center;font-size:13px;color:var(--faint)}
+
+/* 환영 */
+.welcome{justify-content:flex-end;text-align:center}
+.welcome{padding-top:0}
+.welcome .hero{position:relative;flex:1 0 auto;min-height:min(58vh,520px);margin:calc(-60px - env(safe-area-inset-top,0px)) calc(-1 * max(16px,env(safe-area-inset-left,0px))) 0;background:var(--bg) url(media/tiger-hoi.jpg) 43% 30%/cover no-repeat}
+.welcome .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,16,28,.55) 0,rgba(18,16,28,0) 20%,rgba(18,16,28,0) 60%,var(--bg) 100%)}
+.welcome h1{position:relative;margin-top:-24px;font-size:28px}
+
+/* 동의 */
+.points{list-style:none;margin:24px 0 0;padding:0;display:flex;flex-direction:column;gap:16px}
+.points li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;color:var(--sub);font-size:15px;line-height:1.65;word-break:keep-all}
+.points svg{width:20px;height:20px;margin-top:4px;color:var(--sub)}
+.points b{display:block;color:var(--ink);font-weight:400;font-size:16px}
+.consent{position:relative;display:flex;gap:12px;align-items:flex-start;margin:0 0 16px;padding:16px;border-radius:12px;background:var(--hanji);color:var(--hanji-ink);font-size:15px;line-height:1.55;cursor:pointer;word-break:keep-all}
+.consent input{position:absolute;opacity:0;width:1px;height:1px}
+.consent .box{flex-shrink:0;width:22px;height:22px;margin-top:1px;border-radius:6px;border:2px solid var(--wood);background:#FFF9EC;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.consent .box svg{width:16px;height:16px;color:#fff;opacity:0}
+.consent input:checked+.box{background:var(--accent);border-color:var(--accent)}
+.consent input:checked+.box svg{opacity:1}
+.err{min-height:20px;margin:-8px 0 8px;font-size:13px;color:var(--danger)}
+
+/* 녹음 */
+.rec-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.rec-top h1{font-size:24px}
+.count{flex-shrink:0;font-size:13px;color:var(--faint);font-variant-numeric:tabular-nums}
+.house{position:relative;margin:20px calc(-1 * max(16px,env(safe-area-inset-left,0px))) 0;aspect-ratio:1120/530;overflow:hidden}
+.house .base{position:absolute;inset:0;background:url(media/house-dark.jpg) center/cover;filter:brightness(.62) saturate(.85)}
+.house::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--bg) 0,rgba(18,16,28,0) 14%,rgba(18,16,28,0) 80%,var(--bg) 100%);pointer-events:none}
+.house img{position:absolute;opacity:0;transition:opacity 1.6s ease}
+.house img.on{opacity:1}
+.house .glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(242,217,160,.32),rgba(242,217,160,0) 66%);opacity:0;transform:scale(.6);transition:opacity 1.6s ease,transform 1.6s ease;pointer-events:none}
+.house .glow.on{opacity:1;transform:none}
+.wins{display:flex;justify-content:center;gap:8px;margin-top:12px}
+.wins i{display:block;width:20px;height:12px;border-radius:2px;background:#3E3858;box-shadow:inset 0 0 0 1px #57507A;transition:background .8s,box-shadow .8s}
+.wins i.on{background:var(--lantern);box-shadow:none}
+@media (min-width:900px){.house{margin-left:-32px;margin-right:-32px}.welcome .hero{margin:-28px -32px 0;min-height:340px;border-radius:24px 24px 0 0;background-position:50% 30%}}
+.slip{position:relative;margin:16px 0 0;padding:20px;border-radius:6px;background:var(--hanji);color:var(--hanji-ink);box-shadow:0 8px 22px rgba(0,0,0,.35)}
+.slip .say{margin:0;font-family:var(--f-story);font-weight:400;font-size:22px;line-height:1.6;word-break:keep-all;text-wrap:balance}
+.slip .how{margin:8px 0 0;font-size:13px;color:var(--hanji-sub)}
+.recarea{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:24px}
+.mic{position:relative;width:80px;height:80px;border:0;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(113,102,174,.45);transition:background .2s,transform .15s}
+.mic:hover{background:var(--accent-hi)}
+.mic svg{width:28px;height:28px}
+.mic.live{background:#C46A6A;box-shadow:0 0 0 0 rgba(196,106,106,.5);animation:ring 1.6s ease-out infinite}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(196,106,106,.45)}100%{box-shadow:0 0 0 18px rgba(196,106,106,0)}}
+.wave{display:flex;align-items:center;gap:4px;height:28px}
+.wave i{display:block;width:4px;height:6px;border-radius:2px;background:var(--lantern);opacity:.85}
+.live-on .wave i{animation:bar .9s ease-in-out infinite}
+.wave i:nth-child(2){animation-delay:.12s}.wave i:nth-child(3){animation-delay:.24s}.wave i:nth-child(4){animation-delay:.36s}.wave i:nth-child(5){animation-delay:.48s}.wave i:nth-child(6){animation-delay:.6s}.wave i:nth-child(7){animation-delay:.72s}
+@keyframes bar{0%,100%{height:6px}50%{height:26px}}
+.hint{min-height:22px;margin:0;font-size:13px;color:var(--faint);text-align:center;font-variant-numeric:tabular-nums}
+.after{display:flex;gap:8px;width:100%}
+.after[hidden]{display:none}
+.after button{flex:1;height:52px;border-radius:14px;font-size:16px;font-weight:400}
+.after .again{border:1px solid var(--line);background:rgba(29,26,43,.8);color:var(--sub)}
+.after .next{border:0;background:var(--accent);color:#fff}
+.done-msg{margin:16px 0 0;text-align:center}
+.done-msg[hidden]{display:none}
+.done-msg p{margin:0}
+.done-msg .big{font-family:var(--f-story);font-weight:400;font-size:26px}
+.done-msg .small{margin-top:8px;color:var(--sub);font-size:15px}
+
+/* 까치가 말하는 자리(오류) */
+.kkline{display:flex;gap:12px;align-items:flex-start;margin-top:16px;padding:16px;border-radius:16px;background:rgba(29,26,43,.88);border:1px solid var(--line);font-size:14px;line-height:1.6;color:var(--sub);word-break:keep-all}
+.kkline[hidden]{display:none}
+.kkline img{flex-shrink:0;width:44px;height:auto}
+.kkline b{display:block;color:var(--ink);font-weight:400}
+.kkline button{margin-top:4px;padding:8px 0;border:0;background:transparent;color:var(--lantern);font-size:14px;text-decoration:underline;text-underline-offset:3px}
+
+/* 1편 준비 */
+.prep{text-align:center}
+.prep .stage{position:relative;margin-top:10px;margin-bottom:16px}
+.prep .stage .house{margin-top:0}
+.prep .kk{position:absolute;right:4%;bottom:-12px;width:80px;transform-origin:50% 92%;animation:nod 3.4s ease-in-out infinite}
+.prep .kk img{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 12px rgba(0,0,0,.45))}
+@keyframes nod{0%,62%,100%{transform:rotate(0)}70%{transform:rotate(-6deg) translateY(2px)}80%{transform:rotate(0)}}
+.pages{display:flex;justify-content:center;gap:8px;margin:24px 0 8px}
+.pages i{display:block;width:8px;height:12px;border-radius:4px/6px;background:#3E3858;transition:background .5s,box-shadow .5s}
+.pages i.on{background:var(--lantern)}
+.prep .status{margin:0;font-size:14px;color:var(--faint);font-variant-numeric:tabular-nums}
+.ready{margin-top:20px}
+.ready[hidden]{display:none}
+.tilt{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0 0;font-size:13px;color:var(--faint)}
+.tilt svg{width:20px;height:20px;color:var(--sub)}
+@media (min-width:900px){.tilt{display:none}}
+
+.toast{position:fixed;z-index:9;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);max-width:calc(100% - 32px);padding:12px 16px;border-radius:999px;
+  background:rgba(18,16,28,.94);border:1px solid var(--line);color:var(--ink);font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center}
+.toast.on{opacity:1}
+.review{position:relative;z-index:1;display:flex;justify-content:center;flex-wrap:wrap;gap:12px;max-width:460px;margin:0 auto;padding:4px 0 calc(16px + env(safe-area-inset-bottom,0px))}
+.review button{border:0;background:transparent;color:var(--faint);font-size:12px;text-decoration:underline;text-underline-offset:3px;padding:8px}
+
+@media (min-width:900px){
+  .app{justify-content:center;min-height:calc(100% - 40px)}
+  .screen{flex:0 0 auto;min-height:640px;padding:28px 32px 28px;margin-bottom:12px;border-radius:24px;background:rgba(18,16,28,.72);border:1px solid var(--line);backdrop-filter:blur(2px)}
+}
+@media (prefers-reduced-motion:reduce){
+  .screen.enter,.prep .kk,.mic.live,.live-on .wave i{animation:none}
+  .house img,.house .glow,.wins i{transition:none}
+}
+</style>
+</head>
+<body>
+
+
+<div class="backdrop" aria-hidden="true"></div>
+
+<div class="app">
+  <header class="bar">
+    <button class="back" id="back" type="button" aria-label="이전 단계로" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <span class="mark" id="mark">MilkSori</span>
+    <div class="steps" id="steps" aria-label="진행 단계" hidden><i></i><i></i><i></i></div>
+    <button class="lang" id="lang" type="button" aria-label="언어 바꾸기">한국어</button>
+  </header>
+
+  <!-- 0 환영 -->
+  <section class="screen welcome" id="s0" aria-labelledby="h0">
+    <div class="hero" role="img" aria-label="보름달 아래 지붕 위의 큰 호랑이와 호이"></div>
+    <h1 id="h0">오늘 밤도,<br>밤마을에 온 걸 환영해</h1>
+    <p class="lede">엄마 아빠 목소리로 아이를 재워 주는 곳이에요. 첫 이야기는 지금 녹음할 여러분의 목소리로 들려줄 거예요.</p>
+    <div style="height:28px"></div>
+    <button class="primary" type="button" data-go="1">시작하기</button>
+    <p class="note">가입 없이 바로 시작해요 · 5분쯤 걸려요</p>
+  </section>
+
+  <!-- 1 목소리 동의 -->
+  <section class="screen" id="s1" aria-labelledby="h1" hidden>
+    <h1 id="h1">내 목소리로<br>밤마을에 불을 켜요</h1>
+    <ul class="points">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span><b>짧은 문장 다섯 개를 읽어요</b>아이에게 들려주듯 천천히 읽으면 돼요</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg><span><b>우리 가족 이야기에만 써요</b>다른 곳에 쓰거나 다른 사람에게 주지 않아요</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 8v6M14 11h6"/></svg><span><b>본인 목소리만 등록할 수 있어요</b>할머니, 할아버지 목소리는 나중에 초대로 받아요</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span><b>언제든 지울 수 있어요</b>우리 가족에서 목소리를 지우면 바로 사라져요</span></li>
+    </ul>
+    <div class="grow" style="min-height:24px"></div>
+    <label class="consent" for="agree">
+      <input id="agree" type="checkbox">
+      <span class="box" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
+      <span>제 목소리이고, 우리 가족 이야기를 읽는 데 쓰는 것에 동의해요</span>
+    </label>
+    <p class="err" id="agreeErr" role="alert"></p>
+    <button class="primary" type="button" id="toRec">다음</button>
+  </section>
+
+  <!-- 2 녹음 -->
+  <section class="screen" id="s2" aria-labelledby="h2" hidden>
+    <div class="rec-top">
+      <h1 id="h2">이 문장을 읽어 주세요</h1>
+      <span class="count" id="count">1 / 5</span>
+    </div>
+    <div class="house" id="lamp" aria-hidden="true"><span class="base"></span>
+      <span class="glow" style="left:2%;top:40%;width:24%;height:52%"></span><span class="glow" style="left:20%;top:44%;width:26%;height:44%"></span><span class="glow" style="left:2%;top:4%;width:50%;height:50%"></span><span class="glow" style="left:36%;top:12%;width:32%;height:60%"></span><span class="glow" style="left:64%;top:46%;width:36%;height:50%"></span>
+      <img src="media/win1.png" alt="" style="left:7.86%;top:51.13%;width:12.23%;height:31.32%"><img src="media/win2.png" alt="" style="left:24.11%;top:52.08%;width:18.12%;height:27.17%"><img src="media/win3.png" alt="" style="left:4.11%;top:18.11%;width:45.45%;height:29.62%"><img src="media/win4.png" alt="" style="left:41.88%;top:22.64%;width:21.34%;height:42.45%"><img src="media/win5.png" alt="" style="left:71.34%;top:59.06%;width:20.89%;height:27.36%">
+    </div>
+    <div class="wins" id="wins" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="slip" id="slip">
+      <p class="say" id="say">오늘 밤도, 밤마을에 온 걸 환영해.</p>
+      <p class="how" id="how">인사하듯, 첫 단어 전에 숨 한 번</p>
+    </div>
+    <div class="recarea" id="recarea">
+      <button class="mic" id="mic" type="button" aria-label="녹음 시작"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></button>
+      <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <p class="hint" id="hint" aria-live="polite">처음 누르면 마이크 사용을 물어봐요</p>
+      <div class="after" id="after" hidden>
+        <button class="again" type="button" id="again">다시 읽기</button>
+        <button class="next" type="button" id="next">다음 문장</button>
+      </div>
+    </div>
+    <div class="kkline" id="micErr" hidden>
+      <img src="media/magpie.png" alt="">
+      <span><b>마이크를 쓸 수 없어요.</b>브라우저 주소창 옆 자물쇠를 눌러 마이크를 허용한 뒤 다시 눌러 주세요.<br><button type="button" id="retryMic">다시 해 볼게요</button></span>
+    </div>
+    <div class="done-msg" id="doneMsg" hidden>
+      <p class="big">골목에 불이 다 켜졌어요</p>
+      <p class="small">내 목소리가 밤마을에 담겼어요</p>
+    </div>
+    <div class="grow" style="min-height:18px"></div>
+    <button class="primary" type="button" id="toPrep" hidden>첫 이야기 만들기</button>
+  </section>
+
+  <!-- 3 1편 준비 -->
+  <section class="screen prep" id="s3" aria-labelledby="h3" hidden>
+    <div class="grow"></div>
+    <div class="stage" aria-hidden="true">
+<div class="house" id="prepHouse" aria-hidden="true"><span class="base"></span>
+      <span class="glow on" style="left:2%;top:40%;width:24%;height:52%"></span><span class="glow on" style="left:20%;top:44%;width:26%;height:44%"></span><span class="glow on" style="left:2%;top:4%;width:50%;height:50%"></span><span class="glow on" style="left:36%;top:12%;width:32%;height:60%"></span><span class="glow on" style="left:64%;top:46%;width:36%;height:50%"></span>
+      <img class="on" src="media/win1.png" alt="" style="left:7.86%;top:51.13%;width:12.23%;height:31.32%"><img class="on" src="media/win2.png" alt="" style="left:24.11%;top:52.08%;width:18.12%;height:27.17%"><img class="on" src="media/win3.png" alt="" style="left:4.11%;top:18.11%;width:45.45%;height:29.62%"><img class="on" src="media/win4.png" alt="" style="left:41.88%;top:22.64%;width:21.34%;height:42.45%"><img class="on" src="media/win5.png" alt="" style="left:71.34%;top:59.06%;width:20.89%;height:27.36%">
+    </div>
+      <div class="kk"><img src="media/magpie.png" alt=""></div>
+    </div>
+    <h1 id="h3">까치가 첫 이야기를<br>가져오고 있어요</h1>
+    <p class="lede">1편 「밤마을에 온 걸 환영해」를 내 목소리로 만들고 있어요</p>
+    <div class="pages" id="pages" aria-hidden="true"></div>
+    <p class="status" id="pstatus" aria-live="polite">그림책 12쪽 중 0쪽 준비</p>
+    <div class="ready" id="ready" hidden>
+      <button class="primary" type="button" id="listen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>내 목소리로 듣기</button>
+      <p class="note">나머지 쪽은 듣는 동안 준비돼요</p>
+      <p class="tilt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="3" width="8" height="14" rx="1.5"/><path d="M4 15a8 8 0 0 0 8 6"/><path d="M9 21h3v-3"/></svg>누르고 나서 휴대폰을 눕혀 주세요</p>
+    </div>
+    <div class="grow"></div>
+  </section>
+</div>
+
+<div class="review">
+  <button type="button" id="rvStart">처음부터</button>
+  <button type="button" id="rvDeny">마이크 거부 화면</button>
+  <button type="button" id="rvFill">녹음 다 채우기</button>
+</div>
+<p class="toast" id="toast" role="status"></p>
+
+<script>
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var screens = [0,1,2,3].map(function(i){ return document.getElementById('s' + i); });
+  var back = document.getElementById('back'), steps = document.getElementById('steps'), mark = document.getElementById('mark');
+  var cur = 0;
+  function go(n){
+    screens[cur].hidden = true; cur = n;
+    var s = screens[n]; s.hidden = false; s.classList.remove('enter'); void s.offsetWidth; s.classList.add('enter');
+    back.hidden = n === 0 || n === 3; steps.hidden = n === 0; mark.hidden = n !== 0;
+    [].forEach.call(steps.children, function(d, i){ d.className = i + 1 < n ? 'done' : (i + 1 === n ? 'on' : ''); });
+    window.scrollTo(0, 0);
+    var h = s.querySelector('h1'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+    if (n === 3) startPrep();
+  }
+  [].forEach.call(document.querySelectorAll('[data-go]'), function(b){ b.addEventListener('click', function(){ go(+b.dataset.go); }); });
+  back.addEventListener('click', function(){ if (cur === 2) stopRec(true); go(cur - 1); });
+
+  var toastEl = document.getElementById('toast'), tT;
+  function toast(m){ toastEl.textContent = m; toastEl.classList.add('on'); clearTimeout(tT); tT = setTimeout(function(){ toastEl.classList.remove('on'); }, 2600); }
+  document.getElementById('lang').addEventListener('click', function(){ toast('English 화면은 같은 구성으로 번역돼요'); });
+
+  /* 동의 */
+  var agree = document.getElementById('agree'), agreeErr = document.getElementById('agreeErr');
+  agree.addEventListener('change', function(){ agreeErr.textContent = ''; });
+  document.getElementById('toRec').addEventListener('click', function(){
+    if (!agree.checked) { agreeErr.textContent = '동의에 표시해야 녹음할 수 있어요'; return; }
+    go(2);
+  });
+
+  /* 녹음: 문장마다 집 창문에 불이 하나씩 들어온다 (시안: 실제 녹음 없이 흉내) */
+  var lines = [
+    ['오늘 밤도, 밤마을에 온 걸 환영해.', '인사하듯, 첫 단어 전에 숨 한 번'],
+    ['해가 산 너머로 내려가면, 밤마을이 눈을 떠.', '느리게, 문장 끝을 내려서'],
+    ['지붕 위로 달이 올라오고, 골목마다 등불이 하나, 둘, 켜지지.', '"하나, 둘"에서 아주 살짝 느리게'],
+    ['"그럼, 호이. 호이가 좋겠다."', '처음 불러 보는 이름처럼'],
+    ['잘 자, 내일 밤 또 만나.', '아이에게 직접 말하듯, 속삭이기 직전까지']
+  ];
+  var idx = 0, filled = 0, state = 'idle', askedMic = false, denyNext = false, recTimer = null, tick = null, secs = 0;
+  var lamp = document.getElementById('lamp'), mic = document.getElementById('mic'), hint = document.getElementById('hint'), after = document.getElementById('after');
+  var recarea = document.getElementById('recarea'), micErr = document.getElementById('micErr'), doneMsg = document.getElementById('doneMsg'), toPrep = document.getElementById('toPrep');
+  var slip = document.getElementById('slip'), countEl = document.getElementById('count'), h2 = document.getElementById('h2');
+  var icMic = mic.innerHTML, icStop = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>';
+
+  var winImgs = lamp.querySelectorAll('img'), winGlows = lamp.querySelectorAll('.glow'), winDots = document.getElementById('wins').children;
+  function setFill(n){ /* 문장 하나 = 창문 한 묶음: 달 창 → 작은 집 → 큰 집 왼쪽 → 큰 집 오른쪽·돌계단 → 등불 공방 */
+    for (var k = 0; k < 5; k++) { var on = k < n; winImgs[k].classList.toggle('on', on); winGlows[k].classList.toggle('on', on); winDots[k].classList.toggle('on', on); }
+  }
+  function showLine(){
+    document.getElementById('say').textContent = lines[idx][0];
+    document.getElementById('how').textContent = lines[idx][1];
+    countEl.textContent = (idx + 1) + ' / ' + lines.length;
+  }
+  function resetRec(){
+    idx = 0; filled = 0; state = 'idle'; setFill(0); showLine();
+    recarea.hidden = false; slip.hidden = false; countEl.hidden = false; h2.textContent = '이 문장을 읽어 주세요';
+    after.hidden = true; mic.hidden = false; mic.innerHTML = icMic; mic.classList.remove('live'); recarea.classList.remove('live-on');
+    hint.textContent = askedMic ? '누르고 읽은 다음, 다시 눌러 멈춰요' : '처음 누르면 마이크 사용을 물어봐요';
+    micErr.hidden = true; doneMsg.hidden = true; toPrep.hidden = true;
+  }
+  function startRec(){
+    if (!askedMic) { askedMic = true; toast('브라우저가 마이크 사용을 물어봐요'); }
+    if (denyNext) { denyNext = false; micErr.hidden = false; hint.textContent = ''; return; }
+    micErr.hidden = true; state = 'rec'; secs = 0;
+    mic.innerHTML = icStop; mic.setAttribute('aria-label', '녹음 멈추기'); mic.classList.add('live'); recarea.classList.add('live-on');
+    hint.textContent = '듣고 있어요 · 0초';
+    tick = setInterval(function(){ secs++; hint.textContent = '듣고 있어요 · ' + secs + '초'; }, 1000);
+    recTimer = setTimeout(stopRec, 12000);
+  }
+  function stopRec(silent){
+    clearTimeout(recTimer); clearInterval(tick);
+    mic.classList.remove('live'); recarea.classList.remove('live-on'); mic.innerHTML = icMic; mic.setAttribute('aria-label', '녹음 시작');
+    if (silent === true || state !== 'rec') { state = 'idle'; return; }
+    state = 'review';
+    if (secs < 1) { hint.textContent = '조금 짧았어요. 문장을 끝까지 읽어 주세요'; state = 'idle'; return; }
+    filled = Math.max(filled, idx + 1); setFill(filled);
+    mic.hidden = true; after.hidden = false; hint.textContent = '잘 담겼어요';
+    document.getElementById('next').textContent = idx === lines.length - 1 ? '다 읽었어요' : '다음 문장';
+  }
+  mic.addEventListener('click', function(){ state === 'rec' ? stopRec() : startRec(); });
+  document.getElementById('again').addEventListener('click', function(){ after.hidden = true; mic.hidden = false; hint.textContent = '누르고 읽은 다음, 다시 눌러 멈춰요'; state = 'idle'; });
+  document.getElementById('next').addEventListener('click', function(){
+    if (idx < lines.length - 1) { idx++; showLine(); after.hidden = true; mic.hidden = false; hint.textContent = '누르고 읽은 다음, 다시 눌러 멈춰요'; state = 'idle'; return; }
+    finishRec();
+  });
+  function finishRec(){
+    filled = lines.length; setFill(filled);
+    recarea.hidden = true; slip.hidden = true; countEl.hidden = true; h2.textContent = '';
+    doneMsg.hidden = false; toPrep.hidden = false; toPrep.focus({ preventScroll: true });
+  }
+  document.getElementById('retryMic').addEventListener('click', function(){ micErr.hidden = true; startRec(); });
+  toPrep.addEventListener('click', function(){ go(3); });
+
+  /* 1편 준비: 12쪽이 차례로 준비되고, 1쪽이 준비되면 바로 들을 수 있다 */
+  var pages = document.getElementById('pages'), pstatus = document.getElementById('pstatus'), ready = document.getElementById('ready'), prepT = null;
+  for (var i = 0; i < 12; i++) pages.appendChild(document.createElement('i'));
+  function startPrep(){
+    clearInterval(prepT); ready.hidden = true; var n = 0;
+    [].forEach.call(pages.children, function(d){ d.className = ''; });
+    pstatus.textContent = '그림책 12쪽 중 0쪽 준비';
+    prepT = setInterval(function(){
+      n++; pages.children[n - 1].className = 'on'; pstatus.textContent = '그림책 12쪽 중 ' + n + '쪽 준비';
+      if (n === 3 && ready.hidden) { ready.hidden = false; }
+      if (n >= 12) { clearInterval(prepT); pstatus.textContent = '그림책 12쪽 모두 준비됐어요'; }
+    }, reduce ? 300 : 1100);
+  }
+  document.getElementById('listen').addEventListener('click', function(){ location.href = '/reader/#first'; });
+
+  /* 검토용 */
+  document.getElementById('rvStart').addEventListener('click', function(){ clearInterval(prepT); agree.checked = false; agreeErr.textContent = ''; askedMic = false; resetRec(); go(0); });
+  document.getElementById('rvDeny').addEventListener('click', function(){ agree.checked = true; resetRec(); denyNext = true; go(2); startRec(); });
+  document.getElementById('rvFill').addEventListener('click', function(){ agree.checked = true; askedMic = true; resetRec(); go(2); finishRec(); });
+
+  resetRec();
+})();
+</script>
+
+</body>
+</html>

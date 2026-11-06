@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#12101C">
+<title>MilkSori 우리 가족</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Gowun+Dodum&display=swap">
+<style>
+/* layout: 탭 "우리 가족" = 위쪽 그림(밤하늘 별 = 들은 밤, 우리 골목 창문 = 가족 목소리) + 아래 부모용 목록(목소리·밤 기록·목소리 지키기·설정).
+   모바일 = 한 열(폭 480) + 하단 탭 2개 / PC(≥900) = 왼쪽 그림 고정, 오른쪽 목록. 초대 = 시트(누구 → 구독 → 계정 → 까치 초대장). 초대받은 가족 화면은 #invited. */
+:root{
+  --bg:#12101C; --surface:#1D1A2B; --surface-2:#262238; --ink:#F2EFFA; --sub:#C9C2DD; --faint:#9E97B8; --line:#332D48;
+  --accent:#7166AE; --accent-hi:#8479C2; --lantern:#F2D9A0; --hanji:#F3E8D2; --hanji-ink:#2A2236; --hanji-sub:#6B6178; --wood:#5A4636; --danger:#F0A8A0;
+  --f-story:"Gowun Batang","Nanum Myeongjo","AppleMyungjo",serif;
+  --f-ui:"Gowun Dodum",-apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;padding-block:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible{outline:2px solid var(--lantern);outline-offset:3px}
+h1,h2,h3{font-weight:400;margin:0}
+
+.app{max-width:480px;margin:0 auto;padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+.bar{display:flex;align-items:center;justify-content:space-between;height:56px;padding-top:env(safe-area-inset-top,0px)}
+.bar h1{font-family:var(--f-story);font-size:20px}
+.mark{font-family:var(--f-story);font-size:15px;color:var(--faint)}
+
+/* 그림: 밤하늘 + 우리 골목 */
+.scene{position:relative;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));overflow:hidden;background:var(--bg)}
+.sky{position:absolute;z-index:3;left:0;right:0;top:0;height:34%}
+.sky svg{position:absolute;inset:0;width:100%;height:100%}
+.sky .st{fill:#F4ECD8}
+.sky .big{fill:var(--lantern)}
+.count{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:12px;display:flex;flex-direction:column;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.count b{font-family:var(--f-story);font-weight:400;font-size:30px;line-height:1.1;color:var(--lantern);font-variant-numeric:tabular-nums}
+.count span{font-size:13px;color:var(--sub)}
+.count small{font-size:12px;color:var(--faint)}
+.house{position:relative;aspect-ratio:1376/768}
+.house .base{position:absolute;inset:0;background:url(media/home-dark.jpg) center/cover;filter:brightness(.82)}
+.house::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(18,16,28,0) 0,rgba(18,16,28,0) 84%,var(--bg) 100%)}
+.house img{position:absolute;opacity:0;transition:opacity 1.6s ease}
+.house img.on{opacity:1}
+.house .glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(242,217,160,.3),rgba(242,217,160,0) 66%);opacity:0;transition:opacity 1.6s ease;pointer-events:none}
+.house .glow.on{opacity:1}
+.house .hot{position:absolute;z-index:3;border-radius:12px}
+.house .hot.wait{outline:1.5px dashed rgba(242,217,160,.55);outline-offset:-4px}
+.temp{position:absolute;z-index:3;right:max(12px,env(safe-area-inset-right,0px));top:8px;padding:2px 10px;border-radius:999px;background:rgba(14,12,22,.6);color:var(--faint);font-size:11px}
+
+/* 창문 칩 = 목소리 자리 */
+.slots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px}
+.slot{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 2px 8px;border-radius:12px;color:var(--faint);font-size:12px;line-height:1.3;text-align:center}
+.slot:hover{background:rgba(255,255,255,.03)}
+.slot i{display:block;width:26px;height:18px;border-radius:3px;background:#3E3858;box-shadow:inset 0 0 0 1px #57507A;position:relative}
+.slot i::after{content:"";position:absolute;left:50%;top:2px;bottom:2px;width:1px;background:#57507A}
+.slot.on{color:var(--ink)}
+.slot.on i{background:var(--lantern);box-shadow:0 0 14px rgba(242,217,160,.45)}
+.slot.on i::after{background:#C9B488}
+.slot.wait i{background:transparent;box-shadow:inset 0 0 0 1.5px rgba(242,217,160,.6)}
+.slot.wait{color:var(--sub)}
+.slot em{font-style:normal;font-size:11px;color:var(--faint)}
+
+/* 목록 영역 */
+.sec{margin-top:32px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+.sec-h h2{font-family:var(--f-story);font-size:19px}
+.sec-h span{font-size:13px;color:var(--faint)}
+.keep{display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:14px;background:var(--hanji);color:var(--hanji-ink)}
+.keep svg{flex-shrink:0;width:22px;height:22px;margin-top:2px;color:var(--wood)}
+.keep b{display:block;font-weight:400;font-size:15px}
+.keep p{margin:2px 0 0;font-size:13px;color:var(--hanji-sub);line-height:1.6}
+.keep button{margin-top:10px;height:36px;padding:0 14px;border-radius:10px;background:var(--hanji-ink);color:var(--hanji);font-size:14px}
+
+.list{display:flex;flex-direction:column;border-radius:14px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+.item{display:flex;align-items:center;gap:12px;min-height:60px;padding:12px 16px;text-align:left;width:100%;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+button.item:hover{background:rgba(255,255,255,.025)}
+.item .ic{flex-shrink:0;width:36px;height:36px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--sub)}
+.item .ic svg{width:20px;height:20px}
+.item .ic.lit{background:rgba(242,217,160,.14);color:var(--lantern)}
+.item .tx{flex:1;min-width:0}
+.item .tx b{display:block;font-weight:400;font-size:15px}
+.item .tx small{display:block;font-size:12.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .end{flex-shrink:0;font-size:13px;color:var(--sub)}
+.item .end.go{color:var(--lantern)}
+.item .chev{flex-shrink:0;width:16px;height:16px;color:var(--faint)}
+.item img{flex-shrink:0;width:64px;aspect-ratio:16/9;object-fit:cover;border-radius:6px}
+.tag{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;font-size:11px;background:var(--surface-2);color:var(--faint);vertical-align:2px}
+.add{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:52px;margin-top:12px;border-radius:14px;background:var(--accent);color:#fff;font-size:16px}
+.add:hover{background:var(--accent-hi)}
+.add svg{width:18px;height:18px}
+.fine{margin:8px 0 0;text-align:center;font-size:12px;color:var(--faint)}
+.mile{display:flex;gap:12px;align-items:center;margin-top:12px;padding:14px 16px;border-radius:14px;border:1px dashed #4A4366;color:var(--sub);font-size:13px}
+.mile svg{flex-shrink:0;width:22px;height:22px;color:var(--lantern)}
+.mile.got{border-style:solid;border-color:#8A7A54;background:rgba(242,217,160,.06);color:var(--ink)}
+
+/* 하단 탭 */
+.tabs{position:fixed;z-index:5;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:8px;padding:8px max(16px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px));background:rgba(18,16,28,.94);border-top:1px solid var(--line)}
+.tabs a{flex:0 1 200px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;color:var(--faint);font-size:12px;text-decoration:none}
+.tabs a svg{width:22px;height:22px}
+.tabs a[aria-current="page"]{color:var(--lantern)}
+
+/* 시트 */
+.scrim{position:fixed;z-index:10;inset:0;background:rgba(6,5,10,.6);opacity:0;pointer-events:none;transition:opacity .3s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;z-index:11;left:50%;bottom:0;width:min(480px,100%);max-height:88vh;overflow:auto;transform:translate(-50%,104%);transition:transform .38s cubic-bezier(.2,.8,.2,1);
+  padding:8px 20px calc(24px + env(safe-area-inset-bottom,0px));border-radius:22px 22px 0 0;background:var(--surface);border:1px solid var(--line);border-bottom:0}
+.sheet:not(.on){visibility:hidden;transition:transform .38s cubic-bezier(.2,.8,.2,1),visibility 0s .38s}
+.sheet.on{transform:translate(-50%,0)}
+.grab{display:block;width:40px;height:4px;margin:4px auto 16px;border-radius:2px;background:#3E3858}
+.sheet h3{font-family:var(--f-story);font-size:22px;line-height:1.4;text-wrap:balance;word-break:keep-all}
+.sheet .lede{margin:6px 0 0;font-size:14px;color:var(--sub);word-break:keep-all}
+.who{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+.who button{height:52px;border-radius:12px;border:1px solid var(--line);font-size:15px;color:var(--sub)}
+.who button[aria-pressed="true"]{border-color:var(--lantern);color:var(--ink);background:rgba(242,217,160,.07)}
+.who button:disabled{opacity:.35;cursor:default}
+.name{display:block;width:100%;height:48px;margin-top:8px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+.primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:52px;margin-top:20px;border-radius:14px;background:var(--accent);color:#fff;font-size:16px}
+.primary:hover{background:var(--accent-hi)}
+.primary:disabled{opacity:.4;cursor:default}
+.quiet{display:block;margin:10px auto 0;padding:8px;color:var(--faint);font-size:14px}
+.plans{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+.plan{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;border:1px solid var(--line);text-align:left}
+.plan[aria-pressed="true"]{border-color:var(--lantern);background:rgba(242,217,160,.07)}
+.plan b{display:block;font-weight:400;font-size:15px}
+.plan small{font-size:12.5px;color:var(--faint)}
+.plan .pr{font-size:16px;font-variant-numeric:tabular-nums}
+.perks{margin:14px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--sub)}
+.perks li{display:flex;gap:8px}
+.perks li::before{content:"";flex-shrink:0;width:6px;height:6px;margin-top:8px;border-radius:50%;background:var(--lantern)}
+.auth{display:flex;flex-direction:column;gap:8px;margin-top:18px}
+.auth button{height:50px;border-radius:12px;font-size:15px;border:1px solid var(--line)}
+.auth .k{background:#F2D86A;color:#2A2236;border:0}
+.auth .g{background:#F2EFFA;color:#1B1828;border:0}
+/* 까치 초대장 */
+.letter{position:relative;margin-top:18px;padding:22px 20px 20px 20px;border-radius:6px;background:var(--hanji);color:var(--hanji-ink);box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.letter .kk{position:absolute;right:-6px;top:-46px;width:84px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.4))}
+.letter .to{font-family:var(--f-story);font-size:19px}
+.letter p{margin:8px 0 0;font-family:var(--f-story);font-size:16px;line-height:1.7;word-break:keep-all}
+.letter .from{margin-top:12px;text-align:right;font-size:13px;color:var(--hanji-sub);font-family:var(--f-ui)}
+.link{display:flex;gap:8px;margin-top:16px}
+.link input{flex:1;min-width:0;height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--sub);font:inherit;font-size:14px}
+.link button{flex-shrink:0;height:48px;padding:0 16px;border-radius:12px;border:1px solid var(--line);color:var(--ink);font-size:14px}
+.btn2{display:flex;gap:8px;margin-top:8px}
+.btn2 button{flex:1;height:48px;border-radius:12px;border:1px solid var(--line);font-size:14px;color:var(--sub)}
+.vhead{display:flex;gap:14px;align-items:center}
+.vhead .win{width:48px;height:34px;border-radius:5px;background:var(--lantern);box-shadow:0 0 18px rgba(242,217,160,.5);position:relative}
+.vhead .win::after{content:"";position:absolute;left:50%;top:3px;bottom:3px;width:1.5px;background:#C9B488}
+.acts{display:flex;flex-direction:column;margin-top:18px;border-radius:14px;border:1px solid var(--line);overflow:hidden}
+.acts button{display:flex;align-items:center;gap:12px;min-height:52px;padding:0 16px;text-align:left;border-top:1px solid var(--line);font-size:15px}
+.acts button:first-child{border-top:0}
+.acts button svg{width:20px;height:20px;color:var(--sub)}
+.acts .del{color:var(--danger)}
+.acts .del svg{color:var(--danger)}
+.confirm{margin-top:14px;padding:16px;border-radius:12px;border:1px solid #5A3A44;background:rgba(240,168,160,.06);font-size:14px;color:var(--sub);word-break:keep-all}
+.confirm b{display:block;color:var(--ink);font-weight:400;font-size:15px;margin-bottom:4px}
+.confirm .row{display:flex;gap:8px;margin-top:12px}
+.confirm .row button{flex:1;height:44px;border-radius:10px;border:1px solid var(--line)}
+.confirm .row .x{background:#8E4A52;border:0;color:#fff}
+
+.toast{position:fixed;z-index:20;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);max-width:calc(100% - 32px);padding:10px 16px;border-radius:999px;background:rgba(18,16,28,.95);border:1px solid var(--line);font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.on{opacity:1}
+
+/* 초대받은 가족 첫 화면 */
+.invited{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.invited .hero{position:relative;height:52vh;min-height:300px;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));background:url(media/tiger-hoi.jpg) 43% 30%/cover}
+.invited .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,16,28,.4) 0,rgba(18,16,28,0) 24%,rgba(18,16,28,0) 58%,var(--bg) 100%)}
+.invited .letter{margin-top:-40px}
+.invited .letter .kk{top:-50px}
+.invited .note{margin:12px 0 0;text-align:center;font-size:12.5px;color:var(--faint)}
+
+.review{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;margin-top:28px}
+.review button,.review a{font-size:12px;color:var(--faint);text-decoration:underline;text-underline-offset:3px;padding:6px 2px}
+
+@media (min-width:900px){
+  .app{max-width:1080px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);column-gap:48px;padding-bottom:110px}
+  .bar{grid-column:1 / -1}
+  .left{position:sticky;top:16px;align-self:start}
+  .scene{margin:0;border-radius:24px}
+  .right .sec:first-child{margin-top:0}
+  .sheet{bottom:auto;top:50%;border-radius:22px;border-bottom:1px solid var(--line);transform:translate(-50%,-46%);opacity:0;pointer-events:none;transition:opacity .25s,transform .3s}
+  .sheet.on{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
+  .grab{display:none}
+}
+@media (prefers-reduced-motion:reduce){.house img,.house .glow,.sheet,.scrim{transition:none}}
+</style>
+</head>
+<body>
+
+
+<div class="app" id="family">
+  <header class="bar"><h1>우리 가족</h1><span class="mark">MilkSori</span></header>
+
+  <div class="left">
+    <div class="scene" aria-label="우리 집 그림: 하늘의 별은 들은 밤, 불 켜진 창문은 가족 목소리">
+      <div class="house" id="house">
+        <span class="base"></span>
+        <div class="sky">
+          <svg id="stars" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <div class="count"><b id="nights">23</b><span>번째 밤</span><small id="toHundred">100번째 밤까지 77밤</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="slots" id="slots"></div>
+  </div>
+
+  <div class="right">
+    <section class="sec" id="keepSec">
+      <div class="keep">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
+        <div><b>목소리 지키기</b><p>지금은 이 기기에만 목소리가 있어요. 계정을 연결하면 휴대폰을 바꿔도 우리 가족 목소리가 남아요.</p><button type="button" id="keepBtn">계정 연결하기</button></div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>가족 목소리</h2><span id="voiceCount">1개</span></div>
+      <div class="list" id="voices"></div>
+      <button class="add" type="button" id="addBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>가족 목소리 더하기</button>
+      <p class="fine" id="addFine">가족 목소리는 구독하면 열려요 · 월 8,900원</p>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>우리 아이의 밤</h2><span>최근</span></div>
+      <div class="list" id="nightsList"></div>
+      <div class="mile" id="mile"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.6 6.1 6.6.6-5 4.4 1.5 6.5L12 16.7l-5.7 3.4 1.5-6.5-5-4.4 6.6-.6z"/></svg><span id="mileTxt">100번째 밤에는 하늘에 큰 별이 하나 떠요</span></div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>또 듣고 싶은 이야기</h2></div>
+      <div class="list">
+        <button class="item" type="button"><img src="media/t08.jpg" alt=""><span class="tx"><b>밤마을에 온 걸 환영해</b><small>1편 · 엄마 목소리로 4번</small></span></button>
+        <button class="item" type="button"><img src="media/t06.jpg" alt=""><span class="tx"><b>호랑이 등의 별을 세어요</b><small>6편 · 엄마 목소리로 2번</small></span></button>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h2>설정</h2></div>
+      <div class="list">
+        <button class="item" type="button"><span class="tx"><b>기본 글자</b></span><span class="end">한국어</span></button>
+        <button class="item" type="button" id="planRow"><span class="tx"><b>구독</b></span><span class="end" id="planTxt">무료로 듣는 중</span></button>
+        <button class="item" type="button" id="acctRow"><span class="tx"><b>계정</b></span><span class="end" id="acctTxt">연결 안 됨</span></button>
+        <button class="item" type="button"><span class="tx"><b>홈 화면에 두기</b><small>앱처럼 바로 열려요</small></span></button>
+        <button class="item" type="button"><span class="tx"><b>도움말</b></span></button>
+        <button class="item" type="button" id="wipeRow"><span class="tx"><b style="color:var(--danger)">목소리와 기록 모두 지우기</b></span></button>
+      </div>
+    </section>
+
+    <div class="review" aria-label="검토용">
+      <button type="button" id="rvPlan">구독 상태 바꾸기</button>
+      <button type="button" id="rvAcct">계정 연결 바꾸기</button>
+      <button type="button" id="rvNights">밤 수 바꾸기 (3 · 23 · 100)</button>
+      <a href="#invited">초대받은 가족 화면</a>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs" id="tabs" aria-label="탭">
+  <a href="/village/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 11l9-6 9 6"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/></svg>마을</a>
+  <a href="#" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="4" y="6" width="16" height="13" rx="1.5"/><path d="M12 6v13M4 12.5h16"/></svg>우리 가족</a>
+</nav>
+
+<!-- 초대받은 가족 -->
+<div class="invited" id="invited" hidden>
+  <div class="hero" role="img" aria-label="지붕 위의 큰 호랑이와 호이"></div>
+  <div class="letter">
+    <img class="kk" src="media/magpie.png" alt="까치">
+    <div class="to">할머니께</div>
+    <p>밤마을에서 할머니 목소리를 기다려요. 짧은 문장 다섯 개만 읽어 주시면, 오늘 밤부터 할머니 목소리로 동화를 들려줄 수 있어요.</p>
+    <div class="from">엄마가 보냄</div>
+  </div>
+  <button class="primary" type="button" id="invStart">목소리 들려주기</button>
+  <p class="note">가입 없이 바로 시작해요 · 5분쯤 걸려요 · 다음 화면은 온보딩의 목소리 동의·녹음과 같아요</p>
+  <div class="review"><a href="#">우리 가족 화면으로</a></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shH"><span class="grab"></span><div id="shBody"></div></div>
+<p class="toast" id="toast" role="status"></p>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var SLOTS = [
+    { key:'gma', label:'할머니', img:{l:18.68,t:53.91,w:9.16,h:18.49}, hot:{l:19.62,t:55.6,w:7.19,h:14.97}, glow:{l:13.87,t:46.62,w:18.69,h:32.93} },
+    { key:'mom', label:'엄마', img:{l:30.67,t:53.78,w:18.46,h:39.06}, hot:{l:35.32,t:55.47,w:10.17,h:15.23}, glow:{l:27.18,t:46.33,w:26.44,h:33.51} },
+    { key:'dad', label:'아빠', img:{l:44.62,t:54.3,w:18.75,h:38.02}, hot:{l:50.94,t:55.99,w:9.16,h:14.58}, glow:{l:43.61,t:47.24,w:23.82,h:32.08} },
+    { key:'gpa', label:'할아버지', img:{l:56.1,t:52.34,w:25.73,h:33.85}, hot:{l:71.8,t:57.42,w:9.01,h:17.97}, glow:{l:64.59,t:46.64,w:23.43,h:39.53} },
+    { key:'etc', label:'그 외 가족', img:{l:73.69,t:36.72,w:5.74,h:13.02}, hot:{l:74.64,t:38.41,w:3.78,h:9.51}, glow:{l:71.62,t:32.70,w:9.83,h:20.92} }
+  ];
+  var st = {
+    plan:'free', account:false, nights:23,
+    voices:{ mom:{ name:'엄마', me:true, date:'11월 6일', stories:7 } },
+    invited:{}
+  };
+  try { var n = +localStorage.getItem('ms_nights'); if (n > 0) st.nights = n; } catch (e) {}
+
+  /* 그림 */
+  var house = $('house');
+  SLOTS.forEach(function(s, i){
+    var g = document.createElement('span'); g.className = 'glow'; g.dataset.k = s.key;
+    g.style.cssText = 'left:' + s.glow.l + '%;top:' + s.glow.t + '%;width:' + s.glow.w + '%;height:' + s.glow.h + '%';
+    var im = document.createElement('img'); im.src = 'media/w-' + s.key + '.png'; im.alt = ''; im.dataset.k = s.key;
+    im.style.cssText = 'left:' + s.img.l + '%;top:' + s.img.t + '%;width:' + s.img.w + '%;height:' + s.img.h + '%';
+    var hot = document.createElement('button'); hot.type = 'button'; hot.className = 'hot'; hot.dataset.k = s.key;
+    hot.style.cssText = 'left:' + (s.hot.l - 1) + '%;top:' + (s.hot.t - 1.5) + '%;width:' + (s.hot.w + 2) + '%;height:' + (s.hot.h + 3) + '%';
+    hot.setAttribute('aria-label', s.label + ' 창문');
+    hot.addEventListener('click', function(){ openSlot(s.key); });
+    house.appendChild(g); house.appendChild(im); house.appendChild(hot);
+  });
+
+  /* 별: 들은 밤 하나 = 별 하나. 100번째 밤 = 큰 별 */
+  function rnd(seed){ var x = Math.sin(seed * 9301 + 49297) * 233280; return x - Math.floor(x); }
+  function drawStars(){
+    var svg = $('stars'), n = Math.min(st.nights, 100), out = '';
+    for (var i = 0; i < n; i++) {
+      var x = 12 + rnd(i + 1) * 376, y = 6 + rnd(i + 101) * 70, r = 0.7 + rnd(i + 201) * 1.1;
+      if (x < 120 && y < 62) { x += 110; }
+      out += '<circle class="st" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + r.toFixed(2) + '" opacity="' + (0.45 + rnd(i + 301) * 0.5).toFixed(2) + '"/>';
+    }
+    if (st.nights >= 100) out += '<circle cx="300" cy="30" r="14" fill="rgba(242,217,160,.16)"/><path class="big" transform="translate(300 30) scale(.55)" d="M0-14L3.8-4.6 13.6-4.3 5.8 1.9 8.6 11.4 0 5.9-8.6 11.4-5.8 1.9-13.6-4.3-3.8-4.6z"/>';
+    svg.innerHTML = out;
+    $('nights').textContent = st.nights;
+    $('toHundred').textContent = st.nights >= 100 ? '100번째 밤을 지났어요' : '100번째 밤까지 ' + (100 - st.nights) + '밤';
+    $('mile').classList.toggle('got', st.nights >= 100);
+    $('mileTxt').textContent = st.nights >= 100 ? '100번째 밤 — 하늘에 큰 별이 떴어요' : '100번째 밤에는 하늘에 큰 별이 하나 떠요';
+  }
+
+  function render(){
+    /* 창문 */
+    SLOTS.forEach(function(s){
+      var on = !!st.voices[s.key], wait = !on && !!st.invited[s.key];
+      house.querySelector('img[data-k="' + s.key + '"]').classList.toggle('on', on);
+      house.querySelector('.glow[data-k="' + s.key + '"]').classList.toggle('on', on);
+      house.querySelector('.hot[data-k="' + s.key + '"]').classList.toggle('wait', wait);
+    });
+    $('slots').innerHTML = SLOTS.map(function(s){
+      var v = st.voices[s.key], on = !!v, wait = !on && !!st.invited[s.key];
+      return '<button type="button" class="slot' + (on ? ' on' : '') + (wait ? ' wait' : '') + '" data-k="' + s.key + '"><i></i>' + (v ? v.name : s.label) + '<em>' + (on ? '불 켜짐' : (wait ? '초대 보냄' : '비어 있음')) + '</em></button>';
+    }).join('');
+    /* 목소리 목록 */
+    var rows = '', count = 0;
+    SLOTS.forEach(function(s){
+      var v = st.voices[s.key];
+      if (v) { count++; rows += '<button class="item" type="button" data-k="' + s.key + '"><span class="ic lit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></span><span class="tx"><b>' + v.name + (v.me ? '<span class="tag">나</span>' : '') + '</b><small>' + v.date + ' 녹음 · 이야기 ' + v.stories + '편 준비됨</small></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>'; }
+      else if (st.invited[s.key]) { rows += '<button class="item" type="button" data-k="' + s.key + '"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="1.5"/><path d="M3 7l9 6 9-6"/></svg></span><span class="tx"><b>' + st.invited[s.key] + '</b><small>초대장을 보냈어요 · 녹음을 기다리는 중</small></span><span class="end go">다시 보내기</span></button>'; }
+    });
+    $('voices').innerHTML = rows;
+    $('voiceCount').textContent = count + '개';
+    $('addFine').hidden = st.plan !== 'free';
+    $('keepSec').hidden = st.account;
+    $('planTxt').textContent = st.plan === 'free' ? '무료로 듣는 중' : '연 구독 · 다음 결제 2027년 11월 6일';
+    $('acctTxt').textContent = st.account ? 'kyu****@gmail.com' : '연결 안 됨';
+    drawStars();
+  }
+
+  /* 밤 기록 */
+  var NIGHTS = [
+    ['11월 6일', '밤마을에 온 걸 환영해', '엄마 · 두 번', 't08.jpg'],
+    ['11월 5일', '호랑이 등의 별을 세어요', '엄마 · 한 번', 't06.jpg'],
+    ['11월 4일', '하늘로 올라간 오누이', '엄마 · 세 번', 't05.jpg']
+  ];
+  $('nightsList').innerHTML = NIGHTS.map(function(r){
+    return '<div class="item"><img src="media/' + r[3] + '" alt=""><span class="tx"><b>' + r[1] + '</b><small>' + r[0] + ' · ' + r[2] + '</small></span></div>';
+  }).join('');
+
+  /* 시트 */
+  var sheet = $('sheet'), scrim = $('scrim'), body = $('shBody'), lastFocus = null;
+  function openSheet(html){ lastFocus = document.activeElement; body.innerHTML = html; sheet.classList.add('on'); scrim.classList.add('on'); var f = body.querySelector('button,input'); if (f) f.focus({ preventScroll:true }); }
+  function closeSheet(){ sheet.classList.remove('on'); scrim.classList.remove('on'); if (lastFocus) lastFocus.focus({ preventScroll:true }); }
+  scrim.addEventListener('click', closeSheet);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeSheet(); });
+  var toastT;
+  function toast(m){ var t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('on'); }, 2400); }
+
+  function openSlot(k){ if (st.voices[k]) voiceSheet(k); else invite(k); }
+  $('slots').addEventListener('click', function(e){ var b = e.target.closest('.slot'); if (b) openSlot(b.dataset.k); });
+  $('voices').addEventListener('click', function(e){ var b = e.target.closest('.item'); if (b) openSlot(b.dataset.k); });
+
+  /* 목소리 시트 */
+  function voiceSheet(k){
+    var v = st.voices[k];
+    openSheet('<div class="vhead"><span class="win"></span><div><h3 id="shH">' + v.name + ' 목소리</h3><p class="lede">' + v.date + ' 녹음 · 이야기 ' + v.stories + '편 준비됨</p></div></div>' +
+      '<div class="acts">' +
+      '<button type="button" data-a="hear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M7 4.5v15l12-7.5z"/></svg>이 목소리로 한 문장 듣기</button>' +
+      '<button type="button" data-a="rename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10-4-4L4 16z"/></svg>부르는 이름 바꾸기</button>' +
+      '<button type="button" data-a="again"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>다시 녹음하기</button>' +
+      '<button type="button" data-a="del" class="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>이 목소리 지우기</button>' +
+      '</div><div id="conf"></div>');
+    body.querySelector('.acts').addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.a === 'hear') toast('"오늘 밤도, 밤마을에 온 걸 환영해." — ' + v.name + ' 목소리로 재생 (시안)');
+      if (b.dataset.a === 'rename') toast('아이가 부르는 이름으로 바꿀 수 있어요 (예: 엄마 → 마미)');
+      if (b.dataset.a === 'again') toast('온보딩의 녹음 화면으로 이어져요');
+      if (b.dataset.a === 'del') {
+        $('conf').innerHTML = '<div class="confirm"><b>' + v.name + ' 목소리를 지울까요?</b>이 목소리로 만든 이야기도 함께 사라지고, 되돌릴 수 없어요.<div class="row"><button type="button" class="x" id="cDel">지우기</button><button type="button" id="cKeep">그대로 두기</button></div></div>';
+        $('cKeep').focus();
+        $('cKeep').onclick = function(){ $('conf').innerHTML = ''; };
+        $('cDel').onclick = function(){ delete st.voices[k]; closeSheet(); render(); toast(v.name + ' 목소리를 지웠어요'); };
+      }
+    });
+  }
+
+  /* 초대: 누구 → (무료면) 구독 → (익명이면) 계정 → 까치 초대장 */
+  var inv = { k:null, name:'' };
+  function invite(k){
+    inv.k = k || null; inv.name = k ? labelOf(k) : '';
+    var opts = SLOTS.filter(function(s){ return s.key !== 'mom'; }).map(function(s){
+      var taken = !!st.voices[s.key];
+      return '<button type="button" data-k="' + s.key + '" aria-pressed="' + (s.key === inv.k) + '"' + (taken ? ' disabled' : '') + '>' + s.label + '</button>';
+    }).join('');
+    openSheet('<h3 id="shH">누구의 목소리를 더할까요?</h3><p class="lede">초대장을 받은 가족이 짧은 문장 다섯 개를 읽으면, 그 사람의 창문에 불이 켜져요.</p>' +
+      '<div class="who" id="who">' + opts + '</div><input class="name" id="otherName" placeholder="부르는 이름 (예: 이모, 삼촌)" ' + (inv.k === 'etc' ? '' : 'hidden') + '>' +
+      '<button class="primary" type="button" id="toNext"' + (inv.k ? '' : ' disabled') + '>다음</button>');
+    var who = $('who'), other = $('otherName'), next = $('toNext');
+    who.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b || b.disabled) return;
+      [].forEach.call(who.children, function(x){ x.setAttribute('aria-pressed', x === b); });
+      inv.k = b.dataset.k; inv.name = labelOf(inv.k); other.hidden = inv.k !== 'etc'; if (!other.hidden) other.focus(); next.disabled = false;
+    });
+    next.addEventListener('click', function(){ if (inv.k === 'etc' && other.value.trim()) inv.name = other.value.trim(); stepPlan(); });
+  }
+  function labelOf(k){ for (var i = 0; i < SLOTS.length; i++) if (SLOTS[i].key === k) return SLOTS[i].label; return ''; }
+  function stepPlan(){
+    if (st.plan !== 'free') return stepAcct();
+    openSheet('<h3 id="shH">가족 목소리는<br>구독하면 열려요</h3>' +
+      '<ul class="perks"><li>가족 목소리 여러 개 (할머니, 할아버지까지)</li><li>시즌1 이야기 18편 전부</li><li>한국어와 영어를 함께 보는 글자</li><li>인터넷 없이도 듣기</li></ul>' +
+      '<div class="plans" id="plans"><button type="button" class="plan" aria-pressed="false" data-p="m"><span><b>한 달</b><small>언제든 그만둘 수 있어요</small></span><span class="pr">월 8,900원</span></button>' +
+      '<button type="button" class="plan" aria-pressed="true" data-p="y"><span><b>일 년</b><small>한 달에 4,917원꼴 · 45% 아껴요</small></span><span class="pr">연 59,000원</span></button></div>' +
+      '<button class="primary" type="button" id="paid">구독 시작하기</button><button class="quiet" type="button" id="later">나중에 할게요</button>');
+    var plans = $('plans');
+    plans.addEventListener('click', function(e){ var b = e.target.closest('.plan'); if (!b) return; [].forEach.call(plans.children, function(x){ x.setAttribute('aria-pressed', x === b); }); });
+    $('paid').addEventListener('click', function(){ toast('토스페이먼츠 결제창 (시안에서는 바로 완료)'); st.plan = 'sub'; stepAcct(); });
+    $('later').addEventListener('click', closeSheet);
+  }
+  function stepAcct(){
+    if (st.account) return stepLetter();
+    openSheet('<h3 id="shH">목소리를 지키고<br>초대장을 보내요</h3><p class="lede">초대한 가족의 목소리가 우리 가족에 이어지도록 계정을 연결해요. 지금 있는 엄마 목소리와 밤 기록도 그대로 옮겨져요.</p>' +
+      '<div class="auth" id="auth"><button type="button" class="k">카카오로 계속하기</button><button type="button" class="g">Google로 계속하기</button><button type="button">이메일로 계속하기</button></div>');
+    $('auth').addEventListener('click', function(e){ if (!e.target.closest('button')) return; st.account = true; stepLetter(); });
+  }
+  function stepLetter(){
+    var to = inv.name || '가족';
+    openSheet('<h3 id="shH">까치가 초대장을 가져갈게요</h3>' +
+      '<div class="letter" style="margin-top:56px"><img class="kk" src="media/magpie.png" alt="까치"><div class="to">' + to + '께</div><p>밤마을에서 ' + to + ' 목소리를 기다려요. 짧은 문장 다섯 개만 읽어 주시면, 오늘 밤부터 ' + to + ' 목소리로 동화를 들려줄 수 있어요.</p><div class="from">엄마가 보냄</div></div>' +
+      '<div class="link"><input id="lnk" value="milksori.app/i/7KQ2-HN" readonly aria-label="초대 링크"><button type="button" id="copy">복사</button></div>' +
+      '<div class="btn2"><button type="button" id="kakao">카카오톡으로 보내기</button><button type="button" id="msg">문자로 보내기</button></div>' +
+      '<button class="primary" type="button" id="sent">보냈어요</button><p class="fine">링크는 7일 동안 열려요. 한 사람만 녹음할 수 있어요.</p>');
+    $('copy').addEventListener('click', function(){
+      var inp = $('lnk');
+      try { navigator.clipboard.writeText(inp.value).then(function(){ toast('링크를 복사했어요'); }, function(){ inp.select(); toast('링크를 선택했어요. 길게 눌러 복사해 주세요'); }); }
+      catch (e) { inp.select(); }
+    });
+    $('kakao').addEventListener('click', function(){ toast('카카오톡 공유창이 열려요 (시안)'); });
+    $('msg').addEventListener('click', function(){ toast('문자 앱이 열려요 (시안)'); });
+    $('sent').addEventListener('click', function(){ st.invited[inv.k] = to; closeSheet(); render(); toast(to + ' 창문이 불을 기다려요'); });
+  }
+
+  $('addBtn').addEventListener('click', function(){ invite(null); });
+  $('keepBtn').addEventListener('click', function(){ inv.k = null; openSheet('<h3 id="shH">목소리 지키기</h3><p class="lede">계정을 연결하면 휴대폰을 바꿔도 우리 가족 목소리와 밤 기록이 남아요.</p><div class="auth" id="auth"><button type="button" class="k">카카오로 계속하기</button><button type="button" class="g">Google로 계속하기</button><button type="button">이메일로 계속하기</button></div>'); $('auth').addEventListener('click', function(e){ if (!e.target.closest('button')) return; st.account = true; closeSheet(); render(); toast('목소리를 지켰어요'); }); });
+  $('planRow').addEventListener('click', function(){ if (st.plan === 'free') { inv.k = null; inv.name = ''; stepPlanOnly(); } else toast('구독 관리 — 해지는 확인 한 번 뒤 바로 돼요'); });
+  function stepPlanOnly(){ stepPlan(); $('paid').onclick = function(){ st.plan = 'sub'; closeSheet(); render(); toast('구독을 시작했어요'); }; }
+  $('acctRow').addEventListener('click', function(){ if (!st.account) $('keepBtn').click(); else toast('계정 연결 끊기는 확인 한 번 뒤 돼요'); });
+  $('wipeRow').addEventListener('click', function(){ openSheet('<h3 id="shH">목소리와 기록을 모두 지울까요?</h3><p class="lede">가족 목소리, 목소리로 만든 이야기, 우리 아이의 밤 기록이 모두 사라지고 되돌릴 수 없어요.</p><div class="confirm" style="margin-top:18px"><div class="row" style="margin-top:0"><button type="button" class="x" id="wDel">모두 지우기</button><button type="button" id="wKeep">그대로 두기</button></div></div>'); $('wKeep').focus(); $('wKeep').onclick = closeSheet; $('wDel').onclick = function(){ closeSheet(); toast('시안에서는 지우지 않아요'); }; });
+
+  /* 검토용 */
+  $('rvPlan').addEventListener('click', function(){ st.plan = st.plan === 'free' ? 'sub' : 'free'; if (st.plan === 'sub') { st.voices.gma = { name:'할머니', date:'11월 8일', stories:7 }; } else { delete st.voices.gma; st.invited = {}; } render(); });
+  $('rvAcct').addEventListener('click', function(){ st.account = !st.account; render(); });
+  var nightSteps = [3, 23, 100], ni = 1;
+  $('rvNights').addEventListener('click', function(){ ni = (ni + 1) % 3; st.nights = nightSteps[ni]; render(); });
+
+  /* 초대받은 가족 화면 */
+  function route(){ var inv2 = location.hash === '#invited'; $('invited').hidden = !inv2; $('family').hidden = inv2; $('tabs').hidden = inv2; window.scrollTo(0, 0); }
+  window.addEventListener('hashchange', route);
+  $('invStart').addEventListener('click', function(){ location.href = '/first-night/'; });
+  route();
+  render();
+})();
+</script>
+
+</body>
+</html>

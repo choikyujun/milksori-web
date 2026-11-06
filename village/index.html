@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#12101C">
+<title>MilkSori 오늘 밤</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Gowun+Dodum&display=swap">
+<style>
+/* layout: 인트로(등불 인사) → 까치 장면(하루 첫 방문) → 밤마을 지도(메인). 모바일 = 세로 마을 + 오늘 밤 띠 + 탭 2개 / PC = 헤더 + 가로 마을 + 오늘 밤 띠 */
+:root{
+  --bg:#12101C; --surface:#1D1A2B; --surface-2:#262238; --ink:#F2EFFA; --sub:#C9C2DD; --faint:#9E97B8; --line:#2E2942;
+  --accent:#7166AE; --on-accent:#FFFFFF; --night:#1B1828; --lantern:#F2D9A0;
+  --hanji:#F6EFE0; --hanji-ink:#2A2236; --hanji-sub:#6B6178; --frame:#3A3150;
+  --bubble:#FFFDF8; --bubble-ink:#1B1828; --bubble-sub:#6E6884;
+  --f-story:"Gowun Batang","Nanum Myeongjo","AppleMyungjo",serif;
+  --f-ui:"Gowun Dodum",-apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-ui);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 170px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:2px solid var(--lantern);outline-offset:3px}
+.wrap{max-width:1240px;margin:0 auto}
+
+.top{display:none}
+.mark{font-family:var(--f-story);font-weight:400;font-size:20px;letter-spacing:.01em;color:var(--ink)}
+
+/* 마을 지도 */
+.map{position:relative;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));aspect-ratio:768/1376;overflow:hidden;background:var(--night)}
+.map-inner{position:absolute;inset:0;transform-origin:0 0;transition:transform .9s cubic-bezier(.3,.1,.2,1)}
+.map-inner img.base{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
+.map .logo{position:absolute;z-index:3;left:max(16px,env(safe-area-inset-left,0px));top:16px;font-family:var(--f-story);font-weight:400;font-size:20px;color:var(--ink);text-shadow:0 1px 8px rgba(0,0,0,.5);transition:opacity .4s}
+.map.zoomed .logo{opacity:0}
+
+.sleep{position:absolute;pointer-events:none;background-repeat:no-repeat;
+  -webkit-mask-image:radial-gradient(ellipse closest-side,#000 70%,transparent 100%);mask-image:radial-gradient(ellipse closest-side,#000 70%,transparent 100%)}
+.house{position:absolute;z-index:2;border:0;padding:0;background:transparent;border-radius:24px}
+.house::after{content:"";position:absolute;inset:8%;border-radius:50%;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse closest-side,rgba(242,217,160,.55),rgba(242,217,160,0));mix-blend-mode:screen;transition:opacity .4s}
+.house.tonight::after{animation:glowOnce 2.4s ease-out .6s both}
+.house.hl::after{opacity:.9}
+.house:hover::after{opacity:.6}
+.map.zoomed .house{pointer-events:none}
+@keyframes glowOnce{0%{opacity:0}50%{opacity:.8}100%{opacity:.45}}
+.doorlamp{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--lantern);box-shadow:0 0 10px 4px rgba(242,217,160,.55);pointer-events:none;z-index:2}
+.tag{position:absolute;z-index:3;transform:translate(-50%,-100%);padding:4px 12px;border-radius:999px;background:rgba(18,16,28,.78);font-size:12px;color:var(--ink);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s}
+.tag.on{opacity:1}
+
+.quiet{position:absolute;z-index:4;left:max(12px,env(safe-area-inset-left,0px));bottom:12px;display:flex;gap:4px;transition:opacity .4s}
+.map.zoomed .quiet,.map.zoomed .moods{opacity:0;pointer-events:none}
+.quiet button{height:36px;padding:0 12px;border:0;border-radius:999px;background:rgba(18,16,28,.55);color:var(--sub);font-size:12px}
+.quiet button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink)}
+.moods{position:absolute;z-index:4;left:max(12px,env(safe-area-inset-left,0px));bottom:56px;width:min(260px,70%);display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:16px;background:rgba(18,16,28,.86);transition:opacity .4s}
+.moods[hidden]{display:none}
+.moods button{height:36px;padding:0 12px;text-align:left;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--sub);font-size:13px}
+.moods button[aria-pressed="true"]{border-color:var(--lantern);color:var(--ink)}
+
+/* 오늘 밤 띠 */
+.tonightbar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:6;
+  padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));background:rgba(18,16,28,.94);border-top:1px solid var(--line);
+  display:flex;align-items:center;gap:12px}
+.tonightbar img{width:72px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;flex-shrink:0}
+.tonightbar .t{flex:1;min-width:0}
+.tonightbar .t small{display:block;font-size:12px;color:var(--faint)}
+.tonightbar .t b{display:block;font-family:var(--f-story);font-weight:400;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.playbtn{flex-shrink:0;width:48px;height:48px;border:0;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center}
+
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;justify-content:space-around;
+  padding:8px max(16px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:var(--surface);border-top:1px solid var(--line)}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:96px;padding:4px 0;font-size:12px;color:var(--faint);text-decoration:none}
+.tabbar a[aria-current="page"]{color:var(--lantern)}
+
+/* 처마 등불: 확대된 집의 실제 처마 끝에서 원본 그림 속 등불이 내려온다 */
+.eaves{position:fixed;inset:0;z-index:8;pointer-events:none;--cx:50%;--cy:45%;
+  --tag:#F1E4C6; --tag-ink:#2A2236; --tag-sub:#6B6178; --cord:#8C7A66; --glow:rgba(242,217,160,.5)}
+.eaves.show{pointer-events:auto}
+.eaves .veil{position:absolute;inset:0;border:0;padding:0;cursor:default;opacity:0;transition:opacity .5s ease;
+  background:radial-gradient(circle at var(--cx) var(--cy),rgba(14,12,26,0) 0,rgba(14,12,26,.08) 140px,rgba(14,12,26,.6) 460px)}
+.eaves.show .veil{opacity:1}
+.spill{position:absolute;left:var(--cx);top:var(--cy);width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;pointer-events:none;opacity:0;
+  background:radial-gradient(circle,rgba(242,217,160,.34),rgba(242,217,160,.1) 40%,rgba(242,217,160,0) 68%);mix-blend-mode:screen;transition:opacity .9s ease .3s,transform .9s ease}
+.eaves.show .spill{opacity:1}
+.eaves.choosing .spill{transform:scale(1.35);opacity:1}
+.hname{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:calc(16px + env(safe-area-inset-top,0px));margin:0;padding:8px 16px;border-radius:999px;
+  background:rgba(18,16,28,.6);font-family:var(--f-story);font-weight:400;font-size:16px;color:var(--ink);opacity:0;transition:opacity .4s ease .2s}
+.eaves.show .hname{opacity:1}
+.eaves .close{position:absolute;z-index:2;right:max(16px,env(safe-area-inset-right,0px));top:calc(16px + env(safe-area-inset-top,0px));width:44px;height:44px;border:0;border-radius:50%;
+  background:rgba(18,16,28,.6);color:var(--ink);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s}
+.eaves.show .close{opacity:1}
+.lamp-item{position:absolute;width:var(--w);margin-left:calc(var(--w) / -2);padding:0;border:0;background:none;display:flex;flex-direction:column;align-items:center;opacity:0}
+.eaves.show .lamp-item{animation:lampIn .8s cubic-bezier(.2,.8,.2,1) forwards calc(.35s + var(--i) * .16s)}
+@keyframes lampIn{0%{opacity:0;translate:0 -34px}35%{opacity:1}100%{opacity:1;translate:0 0}}
+/* 마우스를 올리면 그 등불이 처마에 매달린 채 크게 다가온다 (마우스·키보드 전용, 터치는 바로 재생) */
+@media (hover:hover) and (pointer:fine){
+  .lamp-item{transform-origin:50% 0;transition:scale .4s cubic-bezier(.2,.8,.2,1),filter .4s ease}
+  .lamp-item:hover,.lamp-item:focus-visible{scale:1.75;z-index:3}
+  .lamp-item:hover .lampbox::before,.lamp-item:focus-visible .lampbox::before{width:calc(var(--w) * 3.6);height:calc(var(--w) * 3.6)}
+  .lamp-item:hover .lampbox .pic,.lamp-item:focus-visible .lampbox .pic{opacity:.95}
+  #lanterns:has(.lamp-item:hover) .lamp-item:not(:hover){filter:brightness(.6)}
+  .eaves.choosing .lamp-item{scale:1}
+  .eaves.choosing .lamp-item.chosen{scale:1.75}
+}
+.swing{display:flex;flex-direction:column;align-items:center;transform-origin:50% 0}
+.eaves.show .swing{animation:settle 1.6s cubic-bezier(.2,.8,.2,1) both calc(.4s + var(--i) * .16s)}
+@keyframes settle{0%{transform:rotate(4deg)}45%{transform:rotate(-1.5deg)}100%{transform:rotate(0)}}
+.cord{width:1.5px;height:var(--drop);background:linear-gradient(rgba(140,122,102,.2),var(--cord))}
+.lampbox{position:relative;display:block;width:var(--w);height:calc(var(--w) * 2.519);margin-top:-2px}
+.lampbox img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.lampbox::before{content:"";position:absolute;left:50%;top:37.2%;width:calc(var(--w) * 2.6);height:calc(var(--w) * 2.6);transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,var(--glow),rgba(242,217,160,0) 62%);opacity:.85;transition:width .9s,height .9s}
+.lampbox .pic{position:absolute;left:50%;top:37.2%;width:66%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background-size:cover;background-position:center;
+  mix-blend-mode:multiply;opacity:.72;filter:saturate(.85) brightness(1.45) contrast(.8);-webkit-mask-image:radial-gradient(circle,#000 52%,transparent 71%);mask-image:radial-gradient(circle,#000 52%,transparent 71%)}
+.lampbox .dark{display:none}
+.sleeping .lampbox .lit{display:none}
+.sleeping .lampbox .dark{display:block}
+.sleeping .lampbox::before{display:none}
+.sleeping .lampbox .pic{mix-blend-mode:soft-light;filter:grayscale(1);opacity:.3}
+.charm{position:absolute;top:calc(var(--drop) * .4);left:50%;margin-left:4px;width:12px;height:12px;color:var(--lantern);display:none}
+.heard .charm{display:block}
+.ltag{margin-top:8px;width:max-content;max-width:calc(var(--w) + 32px);padding:4px 8px;border-radius:4px;background:var(--tag);color:var(--tag-ink);box-shadow:0 3px 8px rgba(0,0,0,.35);
+  font-family:var(--f-story);font-weight:400;font-size:14px;line-height:1.35;text-align:center;word-break:keep-all;transform:rotate(var(--tilt));transition:opacity .4s}
+.ltag small{display:block;font-family:var(--f-ui);font-weight:400;font-size:11px;color:var(--tag-sub);letter-spacing:.04em}
+.sleeping .ltag{background:#4A4560;color:var(--sub);box-shadow:none}
+.sleeping .ltag small{color:var(--faint)}
+.lamp-item::after{content:"";position:absolute;inset:-10px -18px -6px}
+/* 터치: 처음 누르면 크게, 한 번 더 누르면 재생 */
+.lamp-item{transform-origin:50% 0;transition:scale .4s cubic-bezier(.2,.8,.2,1),filter .4s ease}
+.lamp-item.peek{scale:1.7;z-index:3}
+.lamp-item.peek .ltag{scale:.66;transform-origin:50% 0;transition:scale .4s ease}
+.lamp-item.peek .lampbox::before{width:calc(var(--w) * 3.6);height:calc(var(--w) * 3.6)}
+.lamp-item.peek .lampbox .pic{opacity:.95}
+#lanterns:has(.peek) .lamp-item:not(.peek){filter:brightness(.6)}
+.lamp-item.peek:not(.sleeping) .ltag::after{content:"한 번 더 누르면 들어요";display:block;margin-top:2px;font-family:var(--f-ui);font-weight:400;font-size:11px;color:var(--tag-sub)}
+.lamp-item:focus-visible{outline:none}
+.lamp-item:focus-visible .lampbox img{filter:drop-shadow(0 0 4px var(--lantern))}
+.lamp-item.nudge .swing{animation:nudge .8s ease-out}
+@keyframes nudge{0%{transform:rotate(0)}30%{transform:rotate(4deg)}65%{transform:rotate(-2deg)}100%{transform:rotate(0)}}
+.eaves.choosing .lamp-item:not(.chosen){opacity:.15 !important;transition:opacity .5s}
+.chosen .swing{animation:none !important;transform:translateY(-16px) scale(1.18);transition:transform .9s cubic-bezier(.2,.8,.2,1)}
+.chosen .lampbox::before{width:calc(var(--w) * 5);height:calc(var(--w) * 5)}
+.chosen .ltag{opacity:0}
+.whisper{position:absolute;left:50%;transform:translateX(-50%);width:min(320px,90vw);margin:0;text-align:center;font-size:13px;line-height:1.6;color:var(--ink);
+  padding:12px 16px;border-radius:16px;background:rgba(18,16,28,.72)}
+.whisper[hidden]{display:none}
+.whisper button{border:0;background:transparent;color:var(--lantern);font-size:13px;text-decoration:underline;text-underline-offset:3px;padding:8px}
+
+.toast{position:fixed;z-index:9;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);max-width:calc(100% - 32px);padding:12px 16px;border-radius:999px;
+  background:rgba(18,16,28,.92);color:var(--ink);font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center}
+.toast.on{opacity:1}
+
+.review{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;margin:24px auto 0}
+.review button{border:0;background:transparent;color:var(--faint);font-size:13px;text-decoration:underline;text-underline-offset:3px;padding:8px}
+
+/* 인트로와 까치 장면 */
+.intro,.scene{position:fixed;inset:0;z-index:20;background:var(--night)}
+.intro{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px;text-align:center;transition:opacity .9s ease}
+.intro.gone{opacity:0;pointer-events:none}
+.lamp{width:14px;height:14px;border-radius:50%;background:var(--lantern);opacity:0;animation:lamp 1.6s ease forwards .2s}
+@keyframes lamp{0%{opacity:0;box-shadow:0 0 0 0 rgba(242,217,160,0)}60%{opacity:1}100%{opacity:1;box-shadow:0 0 60px 26px rgba(242,217,160,.28)}}
+.greet{margin:0;font-family:var(--f-story);font-size:clamp(22px,5.4vw,34px);line-height:1.5;color:var(--ink);opacity:0;animation:rise 1.1s ease forwards .9s}
+.greet-en{margin:0;font-size:14px;color:var(--sub);letter-spacing:.02em;opacity:0;animation:rise 1.1s ease forwards 1.4s}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.skip{position:absolute;z-index:5;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));border:0;background:rgba(18,16,28,.5);border-radius:999px;color:var(--sub);font-size:13px;padding:12px 16px}
+.scene{z-index:19;overflow:hidden;transition:opacity 1.1s ease,transform 1.1s cubic-bezier(.4,.1,.2,1)}
+.scene.gone{opacity:0;transform:scale(.55);pointer-events:none}
+.scene video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%}
+.bubble{position:absolute;z-index:4;--dot-x:30%;width:min(290px,76%);padding:16px 28px 20px;border:0;border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;text-align:center;cursor:pointer;background:var(--bubble);color:var(--bubble-ink);
+  filter:drop-shadow(0 6px 14px rgba(20,16,36,.35));opacity:0;transform:scale(.15);transform-origin:var(--dot-x) 130%;transition:opacity .35s ease,transform .35s ease;pointer-events:none}
+.bubble.show{opacity:1;transform:scale(1);pointer-events:auto;animation:inflate .75s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes inflate{0%{opacity:0;transform:scale(.15)}55%{opacity:1;transform:scale(1.08)}75%{transform:scale(.96)}90%{transform:scale(1.02)}100%{opacity:1;transform:scale(1)}}
+.bubble::before,.bubble::after{content:"";position:absolute;border-radius:50%;background:var(--bubble)}
+.bubble::before{width:16px;height:16px;left:calc(var(--dot-x) - 6px);bottom:-20px}
+.bubble::after{width:10px;height:10px;left:calc(var(--dot-x) - 4px);bottom:-36px}
+.bubble .night{display:block;font-size:11px;color:var(--bubble-sub);letter-spacing:.04em}
+.bubble .say{display:block;margin-top:2px;font-family:var(--f-story);font-size:13px;line-height:1.55;word-break:keep-all}
+
+@media (min-width:900px){
+  body{padding-block:0 48px}
+  .top{display:flex;align-items:center;justify-content:space-between;min-height:72px}
+  .top nav{display:flex;gap:4px}
+  .top nav a{padding:8px 12px;border-radius:8px;color:var(--sub);text-decoration:none;font-size:15px}
+  .top nav a[aria-current="page"]{color:var(--lantern)}
+  .map{margin-inline:0;aspect-ratio:1376/768;border-radius:20px}
+  .map .logo{display:none}
+  .quiet{left:auto;bottom:auto;right:16px;top:16px}
+  .moods{left:auto;bottom:auto;right:16px;top:60px}
+  .tonightbar{position:static;margin-top:16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:12px 16px}
+  .tonightbar img{width:96px}
+  .tabbar{display:none}
+  .hname{left:50%;transform:translateX(-50%)}
+  .bubble{width:min(280px,30%)}
+}
+@media (prefers-reduced-motion:reduce){
+  .intro{display:none}
+  .map-inner,.scene,.bubble,.eaves .veil,.spill{transition:none}
+  .eaves.show .lamp-item{animation:none;opacity:1;transform:none}
+  .eaves.show .swing,.lampbox::before,.lamp-item.nudge .swing{animation:none}
+  .bubble.show,.house.tonight::after,.house.hl::after{animation:none}
+  .house.tonight::after{opacity:.45}
+}
+</style>
+</head>
+<body>
+
+
+<div class="intro" id="intro" hidden>
+  <div class="lamp" aria-hidden="true"></div>
+  <p class="greet">오늘 밤도, 밤마을에 온 걸 환영해</p>
+  <p class="greet-en" lang="en">Welcome back to Night Village, tonight and every night.</p>
+  <button class="skip" id="skipIntro" type="button">건너뛰기</button>
+</div>
+
+<div class="scene gone" id="scene">
+  <video id="sceneVideo" muted playsinline preload="auto" aria-label="큰 호랑이 곁에 까치가 날아와 앉는 장면"></video>
+  <button class="bubble" id="bubble" type="button" title="눌러서 닫기">
+    <span class="night" id="kNight">첫째 밤</span>
+    <span class="say" id="kSay">여기선 엄마 아빠 목소리로 이야기를 들어요.</span>
+  </button>
+  <button class="skip" id="skipScene" type="button">마을로 가기</button>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <span class="mark">MilkSori</span>
+    <nav aria-label="주요 메뉴"><a href="#" aria-current="page">마을</a><a href="/family/">우리 가족</a></nav>
+  </header>
+
+  <main id="mainArea">
+    <div class="map" id="map">
+      <div class="map-inner" id="mapInner">
+        <img class="base" id="baseImg" alt="밤마을 전경. 언덕 위 큰 집 지붕에 큰 호랑이가 앉아 있고, 골목을 따라 한옥들이 불을 밝히고 있다.">
+      </div>
+      <span class="logo">MilkSori</span>
+      <div class="quiet">
+        <button type="button" id="moodBtn" aria-pressed="false" aria-controls="moods">상황으로 고르기</button>
+        <button type="button" data-note="부모님용 목록 화면으로 가요">목록으로 보기</button>
+      </div>
+      <div class="moods" id="moods" hidden></div>
+    </div>
+  </main>
+
+  <div class="tonightbar" role="region" aria-label="오늘 밤 이야기">
+    <img src="media/cover-ep01.jpg" alt="">
+    <div class="t"><small>오늘 밤 이야기</small><b>밤마을에 온 걸 환영해</b></div>
+    <button class="playbtn" type="button" id="playTonight" aria-label="오늘 밤 이야기 재생"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg></button>
+  </div>
+
+  <div class="review">
+    <button type="button" id="replay">처음 화면 다시 보기</button>
+    <button type="button" id="nextNight">다음 밤 문구 보기</button>
+    <button type="button" id="resetHeard">들은 기록 지우기</button>
+  </div>
+</div>
+
+<section class="eaves" id="eaves" role="dialog" aria-modal="true" aria-labelledby="houseName">
+  <button class="veil" id="veil" type="button" aria-label="마을로 돌아가기" tabindex="-1"></button>
+  <div class="spill" aria-hidden="true"></div>
+  <p class="hname" id="houseName">집 이름</p>
+  <button class="close" id="winClose" type="button" aria-label="마을로 돌아가기"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div id="lanterns"></div>
+  <p class="whisper" id="whisper" hidden>이 등불은 아직 잠들어 있어요<br><button type="button" data-note="부모님 확인 뒤 구독 화면이 열려요">부모님께</button></p>
+</section>
+
+<p class="toast" id="toast" role="status"></p>
+
+<nav class="tabbar" aria-label="탭">
+  <a href="#" aria-current="page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18"/><path d="M5 20v-7l4-3 4 3v7"/><path d="M13 20v-5l3-2 3 2v5"/></svg>마을</a>
+  <a href="/family/"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14a6 6 0 0 1 3.5 6"/></svg>우리 가족</a>
+</nav>
+
+<script>
+(function(){
+  var pcMQ = matchMedia('(min-width: 900px)');
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function store(k, v){ try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch(e) { return null; } }
+
+  /* ---------- 이야기와 집 ---------- */
+  var titles = ['밤마을에 온 걸 환영해','하늘로 올라간 오누이','달 할머니의 떡','벼를 쪼아 준 참새들','등불을 잊은 도깨비','호랑이 등의 별을 세어요','제비가 물어다 준 씨앗','첫눈 내리는 밤','하늘로 돌아간 날개옷','달에 걸어둔 등불','등불이 하나씩 꺼질 때','구름 이불','집을 지고 다니는 달팽이','빗소리 자장가','별똥별에게 빈 소원','제일 작은 반딧불이','사막의 별, 밤마을의 별','호이가 혼자 잠든 밤'];
+  var free = [1,2,4,6,7,9,14];
+  var covers = { 1: 'media/cover-ep01.jpg', 6: 'media/p6.jpg', 18: 'media/p5.jpg' };
+  /* 집 자리: [왼쪽%, 위%, 폭%, 높이%] — PC 가로 그림 / 모바일 세로 그림 */
+  var houses = [
+    { id:'tiger',   name:'큰 호랑이네 집', eps:[1,6,18],  pc:[38,6,37,35],      m:[30,3,65,23] },
+    { id:'moon',    name:'달 할머니네 집', eps:[3,10,15], pc:[28,41,18,20],     m:[3,25.5,39,13] },
+    { id:'lantern', name:'등불 공방',      eps:[5,11,12], pc:[52.5,41,20,22],   m:[2,39,42,13] },
+    { id:'swallow', name:'제비 둥지 집',   eps:[2,7,9],   pc:[73,48,15,17],     m:[65,28.5,34,12.5] },
+    { id:'straw',   name:'볏짚단 집',      eps:[4,8],     pc:[58,62,19,30],     m:[49,46.5,51,20] },
+    { id:'snail',   name:'달팽이 담장 집', eps:[13,14],   pc:[30.5,61,10.5,19], m:[0,64,52,26] },
+    { id:'firefly', name:'반딧불 덤불 집', eps:[16,17],   pc:[41.5,58,16,27],   m:[62.5,68,37.5,18] }
+  ];
+  var moods = [
+    ['어둠이 무서운 밤',[1,2,11]], ['엄마 아빠가 멀리 있는 밤',[10,17,3]], ['혼자 자는 밤',[18,13]], ['새로운 곳의 첫 밤',[1,9,17]],
+    ['잠이 안 오는 밤',[6,12,14,11]], ['실수한 날 밤',[5]], ['내일이 기다려지는 밤',[15,16]]
+  ];
+  var TONIGHT = 1;
+  var img = { pc:{ lit:'media/village-pc-lit.jpg', dark:'media/village-pc-dark.jpg' }, m:{ lit:'media/village-m-lit.jpg', dark:'media/village-m-dark.jpg' } };
+
+  var map = document.getElementById('map'), inner = document.getElementById('mapInner'), base = document.getElementById('baseImg');
+  var whisper = document.getElementById('whisper');
+  var mode = null, openHouse = null, houseFx = 0.33, lastZoom = null;
+
+  function heard(){ return store('ms_heard') || []; }
+  function key(){ return mode === 'pc' ? 'pc' : 'm'; }
+  function sprite(el, r, src){
+    el.style.backgroundImage = 'url(' + src + ')';
+    el.style.backgroundSize = (10000 / r[2]) + '% ' + (10000 / r[3]) + '%';
+    el.style.backgroundPosition = (r[0] / (100 - r[2]) * 100) + '% ' + (r[1] / (100 - r[3]) * 100) + '%';
+  }
+  function place(el, r){ el.style.left = r[0] + '%'; el.style.top = r[1] + '%'; el.style.width = r[2] + '%'; el.style.height = r[3] + '%'; }
+  function buildMap(){
+    [].slice.call(inner.querySelectorAll('.sleep,.house,.doorlamp,.tag')).forEach(function(n){ n.remove(); });
+    var k = key(), h = heard();
+    base.src = img[k].lit;
+    houses.forEach(function(hs){
+      var r = hs[k], lit = hs.eps.some(function(e){ return free.indexOf(e) > -1; });
+      if (!lit) { var s = document.createElement('div'); s.className = 'sleep'; place(s, r); sprite(s, r, img[k].dark); inner.appendChild(s); }
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'house' + (hs.eps.indexOf(TONIGHT) > -1 ? ' tonight' : '');
+      b.dataset.id = hs.id; b.setAttribute('aria-label', hs.name + ', 이야기 ' + hs.eps.length + '편' + (lit ? '' : ', 아직 불이 꺼져 있음'));
+      place(b, r); inner.appendChild(b);
+      var t = document.createElement('span'); t.className = 'tag'; t.textContent = hs.name; t.style.left = (r[0] + r[2] / 2) + '%'; t.style.top = (r[1] + 2) + '%'; inner.appendChild(t);
+      b.addEventListener('mouseenter', function(){ t.classList.add('on'); }); b.addEventListener('mouseleave', function(){ t.classList.remove('on'); });
+      b.addEventListener('click', function(ev){ ev.stopPropagation(); t.classList.remove('on'); openWin(hs); });
+      if (hs.eps.some(function(e){ return h.indexOf(e) > -1; })) {
+        var d = document.createElement('span'); d.className = 'doorlamp'; d.style.left = (r[0] + r[2] * 0.5) + '%'; d.style.top = (r[1] + r[3] * 0.92) + '%'; inner.appendChild(d);
+      }
+    });
+  }
+
+  /* ---------- 집으로 다가가기 ---------- */
+  function zoomTo(hs){
+    var r = hs[key()], W = map.clientWidth, H = map.clientHeight, s = mode === 'pc' ? 2.1 : 2.2;
+    var cx = (r[0] + r[2] / 2) / 100 * W, cy = (r[1] + r[3] / 2) / 100 * H, tx, ty, scrollTarget = window.scrollY;
+    if (mode === 'pc') { var eIn = (r[1] + eave[hs.id].pc * r[3]) / 100 * H; tx = 0.5 * W; ty = 0.26 * H + (cy - eIn) * s; }
+    else {
+      var top = Math.max(0, Math.min(map.getBoundingClientRect().top + window.scrollY, document.documentElement.scrollHeight - window.innerHeight));
+      scrollTarget = top; window.scrollTo({ top: top, behavior: reduce ? 'auto' : 'smooth' });
+      tx = 0.5 * W; ty = Math.min(H, window.innerHeight) * 0.28;
+    }
+    var x = Math.min(0, Math.max(W - W * s, tx - cx * s)), y = Math.min(0, Math.max(H - H * s, ty - cy * s));
+    houseFx = (x + cx * s) / W; lastZoom = { x: x, y: y, s: s, scrollTo: scrollTarget };
+    inner.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + s + ')';
+    map.classList.add('zoomed');
+  }
+  function zoomOut(){ inner.style.transform = ''; map.classList.remove('zoomed'); }
+
+  var star = '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.7 6.1 6.6.6-5 4.4 1.5 6.5L12 16.7l-5.8 3.4 1.5-6.5-5-4.4 6.6-.6z"/></svg>';
+  var layer = document.getElementById('eaves'), row = document.getElementById('lanterns');
+  /* 집 사각형 안에서 처마 끝이 있는 높이(0~1) */
+  var eave = { tiger:{pc:.77,m:.91}, moon:{pc:.49,m:.47}, lantern:{pc:.47,m:.58}, swallow:{pc:.65,m:.44}, straw:{pc:.37,m:.37}, snail:{pc:.12,m:.29}, firefly:{pc:.36,m:.38} };
+  var drops = [26, 44, 34], tilts = [-2.5, 1.5, -1], touchOnly = matchMedia('(hover: none)');
+  function layoutLanterns(){
+    if (!openHouse || !lastZoom) return;
+    var hs = openHouse, k = key(), r = hs[k], W = map.clientWidth, H = map.clientHeight, z = lastZoom;
+    var mr = map.getBoundingClientRect(), mTop = mode === 'pc' ? mr.top : mr.top + window.scrollY - z.scrollTo;
+    var lw = mode === 'pc' ? 58 : 46, gap = mode === 'pc' ? 40 : 30;
+    var eY = mTop + z.y + (r[1] + eave[hs.id][k] * r[3]) / 100 * H * z.s;
+    var x0 = mr.left + z.x + (r[0] + r[2] * .2) / 100 * W * z.s, x1 = mr.left + z.x + (r[0] + r[2] * .8) / 100 * W * z.s;
+    var items = row.querySelectorAll('.lamp-item'), n = items.length, need = n * lw + (n - 1) * gap, cx = (x0 + x1) / 2;
+    if (x1 - x0 < need) { x0 = cx - need / 2; x1 = cx + need / 2; }
+    var vw = window.innerWidth, pad = 12 + lw / 2;
+    var shift = Math.max(0, pad - (x0 + lw / 2)) - Math.max(0, (x1 - lw / 2) - (vw - pad));
+    x0 += shift; x1 += shift;
+    eY = Math.max(eY, 70);
+    var xs = [];
+    [].forEach.call(items, function(b, i){
+      var x = n === 1 ? (x0 + x1) / 2 : x0 + lw / 2 + i * ((x1 - x0 - lw) / (n - 1));
+      xs.push(x); b.style.left = x + 'px'; b.style.top = eY + 'px'; b.style.setProperty('--w', lw + 'px');
+    });
+    var midX = xs.reduce(function(a, b){ return a + b; }, 0) / n, midY = eY + 44 + lw * 0.94;
+    layer.style.setProperty('--cx', midX + 'px'); layer.style.setProperty('--cy', midY + 'px');
+    whisper.style.top = Math.min((mode === 'pc' ? mr.bottom : window.innerHeight) - 120, eY + 50 + lw * 2.52 + 92) + 'px';
+  }
+  function openWin(hs){
+    openHouse = hs; zoomTo(hs);
+    document.getElementById('houseName').textContent = hs.name;
+    row.innerHTML = ''; whisper.hidden = true; layer.classList.remove('choosing');
+    var k = key(), h = heard();
+    hs.eps.forEach(function(e, i){
+      var open = free.indexOf(e) > -1, b = document.createElement('button');
+      b.type = 'button'; b.className = 'lamp-item' + (open ? '' : ' sleeping') + (h.indexOf(e) > -1 ? ' heard' : '');
+      b.style.setProperty('--i', i); b.style.setProperty('--drop', drops[(i + hs.eps.length) % 3] + 'px'); b.style.setProperty('--tilt', tilts[i % 3] + 'deg');
+      b.innerHTML = '<span class="swing"><span class="cord"></span><span class="charm">' + star + '</span>'
+        + '<span class="lampbox"><img class="lit" src="media/lamp-lit.png" alt=""><img class="dark" src="media/lamp-dark.png" alt=""><span class="pic"></span></span></span>'
+        + '<span class="ltag"><small></small></span>';
+      var pic = b.querySelector('.pic');
+      if (covers[e]) { pic.style.backgroundImage = 'url(' + covers[e] + ')'; pic.style.backgroundSize = 'cover'; }
+      else sprite(pic, hs[k], img[k].lit);
+      var tag = b.querySelector('.ltag'); tag.querySelector('small').textContent = e + '편'; tag.appendChild(document.createTextNode(titles[e - 1]));
+      b.setAttribute('aria-label', e + '편 ' + titles[e - 1] + (open ? (h.indexOf(e) > -1 ? ', 들은 이야기, 듣기' : ', 듣기') : ', 아직 잠들어 있음'));
+      b.addEventListener('click', function(){
+        if (layer.classList.contains('choosing')) return;
+        if (touchOnly.matches && !b.classList.contains('peek')) {
+          [].forEach.call(row.querySelectorAll('.peek'), function(x){ x.classList.remove('peek'); });
+          b.classList.add('peek'); whisper.hidden = open;
+          if (!open) { b.classList.remove('nudge'); void b.offsetWidth; b.classList.add('nudge'); }
+          return;
+        }
+        if (!open) { b.classList.remove('nudge'); void b.offsetWidth; b.classList.add('nudge'); whisper.hidden = false; return; }
+        layer.classList.add('choosing'); b.classList.add('chosen');
+        layer.style.setProperty('--cx', b.style.left);
+        setTimeout(function(){ play(e); }, reduce ? 0 : 950);
+      });
+      row.appendChild(b);
+    });
+    layoutLanterns();
+    setTimeout(function(){ layer.classList.add('show'); var f = row.querySelector('.lamp-item:not(.sleeping)'); if (f) f.focus({ preventScroll: true }); }, reduce ? 0 : 520);
+  }
+  function closeWin(){ layer.classList.remove('show', 'choosing'); openHouse = null; zoomOut(); }
+  document.getElementById('winClose').addEventListener('click', closeWin);
+  document.getElementById('veil').addEventListener('click', closeWin);
+  addEventListener('keydown', function(e){ if (e.key === 'Escape' && openHouse) closeWin(); });
+
+  function play(e){
+    var h = heard(); if (h.indexOf(e) === -1) { h.push(e); store('ms_heard', h); }
+    toast(e + '편 「' + titles[e - 1] + '」' + (e === 1 ? '' : ' — 테스트 리더는 1편만 있어요')); if (e === 1) { setTimeout(function(){ location.href = '/reader/'; }, 700); return; }
+    if (openHouse) { closeWin(); setTimeout(buildMap, 950); } else buildMap();
+  }
+  document.getElementById('playTonight').addEventListener('click', function(){ play(TONIGHT); });
+
+  /* ---------- 상황으로 고르기 ---------- */
+  var moodBox = document.getElementById('moods'), moodBtn = document.getElementById('moodBtn'), activeMood = null;
+  function applyMood(){
+    [].forEach.call(inner.querySelectorAll('.house'), function(hb){
+      var hs = houses.filter(function(x){ return x.id === hb.dataset.id; })[0];
+      hb.classList.toggle('hl', activeMood !== null && hs.eps.some(function(e){ return moods[activeMood][1].indexOf(e) > -1; }));
+    });
+  }
+  moods.forEach(function(m, i){
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = m[0]; b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', function(){
+      activeMood = activeMood === i ? null : i;
+      [].forEach.call(moodBox.children, function(c, j){ c.setAttribute('aria-pressed', String(j === activeMood)); });
+      applyMood();
+      if (activeMood !== null) { moodBox.hidden = true; moodBtn.setAttribute('aria-pressed','false'); moodBtn.textContent = moods[activeMood][0]; toast('불빛이 밝아진 집에 그런 밤의 이야기가 있어요'); } else moodBtn.textContent = '상황으로 고르기';
+    });
+    moodBox.appendChild(b);
+  });
+  moodBtn.addEventListener('click', function(){ moodBox.hidden = !moodBox.hidden; moodBtn.setAttribute('aria-pressed', String(!moodBox.hidden)); });
+
+  /* ---------- 인트로 → 까치 장면 → 마을 ---------- */
+  var intro = document.getElementById('intro'), scene = document.getElementById('scene'), v = document.getElementById('sceneVideo'), bubble = document.getElementById('bubble');
+  var media = {
+    pc:     { src:'media/magpie-arrive.mp4',   poster:'media/magpie-arrive-poster.jpg',   w:1280, h:720,  head:[0.22,0.705], showAt:5.6 },
+    mobile: { src:'media/magpie-arrive-m.mp4', poster:'media/magpie-arrive-m-poster.jpg', w:720,  h:1280, head:[0.24,0.665], showAt:6.4 }
+  };
+  var lines = [
+    ['첫째 밤','여기선 엄마 아빠 목소리로 이야기를 들어요. 불 켜진 집을 눌러 보세요.','여기선 엄마 아빠 목소리로 이야기를 들어요. 불 켜진 집을 눌러 보세요.'],
+    ['둘째 밤','아빠, 할머니 목소리도 남길 수 있어요. 우리 가족에서 초대해 보세요.','아빠, 할머니 목소리도 남길 수 있어요. 우리 가족에서 초대해 보세요.'],
+    ['셋째 밤','이야기를 들은 집 문 앞엔 등불이 켜져요. 홈 화면에 추가하면 더 빨리 열려요.','이야기를 들은 집 문 앞엔 등불이 켜져요. 즐겨찾기에 두면 더 빨리 열려요.']
+  ];
+  function nightIndex(){
+    var today = new Date().toISOString().slice(0,10), days = store('ms_nights') || [];
+    if (days.indexOf(today) === -1 && days.length < 4) { days.push(today); store('ms_nights', days); }
+    var i = days.indexOf(today); return i === -1 ? 3 : i;
+  }
+  var nIdx = nightIndex(), quiet = nIdx > 2, stage = 'village', bubbleTimer = null, leaveTimer = null, introTimer = null;
+
+  function sceneMode(){ return mode === 'pc' ? 'pc' : 'mobile'; }
+  function toScene(px, py){
+    var m = media[sceneMode()], cw = scene.clientWidth, ch = scene.clientHeight;
+    var s = Math.max(cw / m.w, ch / m.h), vw = m.w * s, vh = m.h * s;
+    var pos = getComputedStyle(v).objectPosition.split(' ').map(function(t){ return parseFloat(t) / 100; });
+    return [(cw - vw) * (isNaN(pos[0]) ? .5 : pos[0]) + px * vw, (ch - vh) * (isNaN(pos[1]) ? .5 : pos[1]) + py * vh];
+  }
+  function placeBubble(){
+    var m = media[sceneMode()], p = toScene(m.head[0], m.head[1]), cw = scene.clientWidth, bw = bubble.offsetWidth, bh = bubble.offsetHeight;
+    var left = Math.max(8, Math.min(cw - bw - 8, p[0] - bw * 0.3));
+    bubble.style.left = left + 'px'; bubble.style.top = Math.max(8, p[1] - bh - 46) + 'px';
+    bubble.style.setProperty('--dot-x', Math.max(14, Math.min(bw - 14, p[0] - left)) + 'px');
+  }
+  function showBubble(){
+    if (quiet) { leaveTimer = setTimeout(toVillage, 1400); return; }
+    document.getElementById('kNight').textContent = lines[nIdx][0];
+    document.getElementById('kSay').textContent = lines[nIdx][mode === 'pc' ? 2 : 1];
+    placeBubble(); bubble.classList.add('show');
+    clearTimeout(bubbleTimer); bubbleTimer = setTimeout(hideBubble, 7000);
+  }
+  function hideBubble(){
+    clearTimeout(bubbleTimer); if (!bubble.classList.contains('show')) return;
+    bubble.classList.remove('show'); if (stage === 'scene') leaveTimer = setTimeout(toVillage, 700);
+  }
+  bubble.addEventListener('click', hideBubble);
+  v.addEventListener('timeupdate', function(){ if (stage === 'scene' && !bubble.dataset.done && v.currentTime >= media[sceneMode()].showAt) { bubble.dataset.done = '1'; showBubble(); } });
+  v.addEventListener('ended', function(){ if (stage === 'scene' && !bubble.dataset.done) { bubble.dataset.done = '1'; showBubble(); } });
+
+  function loadScene(){ var m = media[sceneMode()]; v.poster = m.poster; v.src = m.src; }
+  function startScene(){
+    stage = 'scene'; delete bubble.dataset.done; bubble.classList.remove('show');
+    scene.classList.remove('gone'); try { v.currentTime = 0; } catch(e) {}
+    var p = v.play(); if (p && p.catch) p.catch(function(){ bubble.dataset.done = '1'; showBubble(); });
+  }
+  function toVillage(){
+    clearTimeout(leaveTimer); clearTimeout(bubbleTimer); clearTimeout(introTimer); if (stage === 'village') return;
+    stage = 'village'; bubble.classList.remove('show'); intro.classList.add('gone'); scene.classList.add('gone');
+    setTimeout(function(){ if (stage === 'village') { v.pause(); intro.hidden = true; } }, 1100);
+  }
+  function endIntro(){ clearTimeout(introTimer); if (stage !== 'intro') return; intro.classList.add('gone'); startScene(); }
+  function startAll(){
+    window.scrollTo(0, 0); closeWin(); clearTimeout(leaveTimer); clearTimeout(bubbleTimer);
+    if (reduce) {
+      stage = 'scene'; intro.hidden = true; scene.classList.remove('gone');
+      var seek = function(){ v.currentTime = Math.max(0, v.duration - .05); };
+      if (v.readyState >= 1) seek(); else v.addEventListener('loadedmetadata', function f(){ v.removeEventListener('loadedmetadata', f); seek(); });
+      bubble.dataset.done = '1'; showBubble(); return;
+    }
+    stage = 'intro'; intro.hidden = false; intro.classList.remove('gone'); scene.classList.add('gone');
+    [].forEach.call(intro.querySelectorAll('.lamp,.greet,.greet-en'), function(el){ el.style.animation = 'none'; el.offsetHeight; el.style.animation = ''; });
+    introTimer = setTimeout(endIntro, 3200);
+  }
+  intro.addEventListener('click', endIntro);
+  document.getElementById('skipIntro').addEventListener('click', function(e){ e.stopPropagation(); endIntro(); });
+  document.getElementById('skipScene').addEventListener('click', toVillage);
+  document.getElementById('replay').addEventListener('click', startAll);
+  document.getElementById('nextNight').addEventListener('click', function(){ quiet = false; nIdx = nIdx > 2 ? 0 : (nIdx + 1) % 3; startAll(); });
+  document.getElementById('resetHeard').addEventListener('click', function(){ store('ms_heard', []); buildMap(); applyMood(); toast('들은 기록을 지웠어요'); });
+
+  /* ---------- 공통 ---------- */
+  var toastEl = document.getElementById('toast'), tT = null;
+  function toast(msg){ toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(tT); tT = setTimeout(function(){ toastEl.classList.remove('on'); }, 2600); }
+  [].forEach.call(document.querySelectorAll('[data-note]'), function(b){ b.addEventListener('click', function(e){ e.preventDefault(); toast(b.getAttribute('data-note')); }); });
+
+  function setMode(){
+    var next = pcMQ.matches ? 'pc' : 'mobile'; if (next === mode) return; mode = next;
+    closeWin(); buildMap(); applyMood(); loadScene();
+    if (stage === 'scene') startScene();
+  }
+  addEventListener('resize', function(){ if (openHouse) { zoomTo(openHouse); layoutLanterns(); } if (bubble.classList.contains('show')) placeBubble(); });
+  if (pcMQ.addEventListener) pcMQ.addEventListener('change', setMode); else pcMQ.addListener(setMode);
+  setMode();
+
+  var today = new Date().toISOString().slice(0,10);
+  if (store('ms_lastvisit') !== today) { store('ms_lastvisit', today); startAll(); }
+})();
+</script>
+
+</body>
+</html>
